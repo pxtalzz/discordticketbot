@@ -24,12 +24,13 @@ EMBED_COLOR = 0xf9e6f0
 ROLE_EMOJIS = {
     'owner': '<a:white_butterflies:1390909884928884886>',
     'co-owner': '<:piano_smile:1396035361091752080>',
+    'head admin': '<:miffy_plush:1390909592543957063>',
     'admin': '<:miffy_plush:1390909592543957063>',
     'staff': '<a:cutebunny:1390853287347228914>',
-    'trial': '<a:pink_bubbles:1396386164637958294>'
+    'trial staff': '<a:pink_bubbles:1396386164637958294>'
 }
 
-ROLE_ORDER = ['owner', 'co-owner', 'admin', 'staff', 'trial']
+ROLE_ORDER = ['owner', 'co-owner', 'head admin', 'admin', 'staff', 'trial staff']
 TRACKED_ROLE_IDS = [1390953916082028635, 1396008058693615678, 1428758437646307470]
 PING_ROLE_ID = 1407881544202195004
 
@@ -137,8 +138,10 @@ class ConfirmView(View):
 async def on_ready():
     await db.init_db()
     print(f'Bot is ready! Logged in as {bot.user}')
-    weekly_reset_task.start()
-    sunday_leaderboard.start()
+    if not weekly_reset_task.is_running():
+        weekly_reset_task.start()
+    if not sunday_leaderboard.is_running():
+        sunday_leaderboard.start()
 
 @bot.command()
 async def sendticket(ctx):
@@ -225,7 +228,7 @@ async def setroles(ctx, role_type: str, *roles: discord.Role):
     await ctx.send(f"{role_type.title()} roles set to: {role_mentions}", delete_after=5)
 
 @bot.command()
-async def claim(ctx, force: str = None):
+async def claim(ctx, force: str = ""):
     if not isinstance(ctx.channel, discord.Thread):
         return
     
@@ -254,7 +257,7 @@ async def claim(ctx, force: str = None):
     await ctx.message.delete()
 
 @bot.command()
-async def unclaim(ctx, force: str = None):
+async def unclaim(ctx, force: str = ""):
     if not isinstance(ctx.channel, discord.Thread):
         return
     
@@ -287,18 +290,31 @@ async def close(ctx, *, reason: str = "No reason provided"):
         await ctx.send("This is not a valid ticket thread!")
         return
     
+    handler = await bot.fetch_user(ticket_info['handler_id']) if ticket_info['handler_id'] else None
+    credit_text = handler.mention if handler else "No one"
+    
+    confirmation_embed = discord.Embed(
+        title="Ticket Confirmation",
+        description="are you sure you want to close?",
+        color=EMBED_COLOR
+    )
+    confirmation_embed.add_field(name="Credit given", value=credit_text, inline=False)
+    
     view = ConfirmView(ctx.author.id)
-    msg = await ctx.send(f"Are you sure you want to close this ticket?\nReason: {reason}", view=view)
+    msg = await ctx.send(embed=confirmation_embed, view=view)
     
     await view.wait()
     
     if not view.value:
-        await msg.edit(content="Ticket close cancelled.", view=None)
+        await msg.edit(content="Ticket close cancelled.", view=None, embed=None)
         return
     
     await db.close_ticket(ctx.channel.id, ctx.author.id, reason)
     
     ticket_info = await db.get_ticket_info(ctx.channel.id)
+    if not ticket_info:
+        await msg.edit(content="Error: Could not retrieve ticket information.", view=None)
+        return
     
     messages = []
     async for message in ctx.channel.history(limit=None, oldest_first=True):
@@ -363,8 +379,8 @@ reason
     
     try:
         dm_description = f"""Ticket #{ticket_info['ticket_number']}
-opened by       closed by         handled by
-{opener.mention}                   {closer.mention}                {handler.mention if handler else 'None'}
+opened by       <:whitedash:1390902298166820996>        closed by       <:whitedash:1390902298166820996>          handled by
+{opener.mention}                                      {closer.mention}                               {handler.mention if handler else 'None'}
 opened at
 <t:{created_timestamp}:F>
 closed at
@@ -385,7 +401,13 @@ reason
     except:
         pass
     
-    await msg.edit(content="Ticket closed! Transcript saved.", view=None)
+    close_embed = discord.Embed(
+        title=f"ticket closed <a:Heart:1396388971818520576>",
+        description=f"this ticket was closed by {ctx.author.mention}\n\n**reason**\n{reason}",
+        color=EMBED_COLOR
+    )
+    
+    await msg.edit(embed=close_embed, view=None)
     await ctx.channel.edit(archived=True, locked=True)
 
 @bot.command()
@@ -438,7 +460,7 @@ async def rename(ctx, *, name: str):
     await ctx.channel.edit(name=name)
 
 @bot.command()
-async def profile(ctx, action: str = None, *, message: str = None):
+async def profile(ctx, action: str = "", *, message: str = ""):
     if action == "edit":
         if not await has_staff_permission(ctx.author, ctx.guild.id):
             return
@@ -512,9 +534,13 @@ async def stats(ctx, member: discord.Member = None):
     
     file = discord.File(image_data, filename="stats.png")
     await ctx.send(embed=embed, file=file)
+    try:
+        await ctx.message.delete()
+    except:
+        pass
 
 @bot.command()
-async def lb(ctx, subcommand: str = None, member: discord.Member = None, role: str = None):
+async def lb(ctx, subcommand: str = "", member: discord.Member = None, role: str = ""):
     if subcommand == "add":
         if not any(r.name.lower() in ['admin', 'mod', 'moderator'] for r in ctx.author.roles):
             return
