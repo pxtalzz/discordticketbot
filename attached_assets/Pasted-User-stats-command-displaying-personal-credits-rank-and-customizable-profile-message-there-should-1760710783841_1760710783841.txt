@@ -1,0 +1,69 @@
+User stats command displaying personal credits, rank, and customizable profile message. there should be a 885x303 image that shows their discord banner if they have one blurry (if they dont just use their pfp but blurry) and their pfp picture thats a circle thats in the far left. the badges should be displayed top right
+
+token: MTQyODczMDY0MDc5NDEyODM4NA.GbURw-.QwAjgItVvWyrtAP2025h6D0nr2jZjC6Ofw0lII
+
+
+Persistent ticket creation message that only server owner can repost with .sendticket command
+Category selection dropdown on ticket creation message (middleman, pilot, verify, giveaway, other) allowing members to create tickets by selecting category
+Automatic ticket numbering system for organized ticket tracking
+Ticket limit system with .ticketlimit command to set maximum open tickets (server owner only)
+Private message notification to members when ticket limit is reached stating 'Tickets are currently full. try again later!'
+Ticket claim system for staff to assign tickets and automatically track credits
+Ticket closing with reason and confirmation prompt (restricted to admins/mods only)
+Credit attribution and transcript posting to archive channel with button link back to thread
+Comprehensive transcript embed with opener, handler, closer, timestamps, duration, close reason, and f9e6f0 embed color
+DM ticket opener with full transcript details and button link when ticket closes
+.close command with reason, confirmation prompt, credit attribution, and transcript posting to archive channel
+.fm command to jump to first message in any thread or channel. this should be an embed that says First message sent in (channel name) - here (with the here being a hyperlink to the first message)  (staff only)
+.add and .remove commands to manage thread participants (staff only)
+.rename command to rename ticket threads (staff only)
+.stats command displaying all-time stats, weekly stats, rank, role assignment date, customizable profile message.
+.profile edit command to customize personal profile message shown in stats embed (staff only)
+.lb command showing staff leaderboard with handles for all-time and weekly stats by role hierarchy with f9e6f0 embed color (staff only)
+.lb w command showing weekly staff leaderboard with role precedence maintained with f9e6f0 embed color (staff only)
+.lb c command showing all-time closes leaderboard with role precedence with f9e6f0 embed color (staff only)
+.lb cw command showing weekly closes leaderboard with role precedence with f9e6f0 embed color (staff only)
+Automated dual leaderboard embeds posted Sundays at 4 AM EST for all-time closed/handled and weekly stats by role hierarchy with f9e6f0 embed color
+.claim force and .unclaim force commands with role-based permissions for credit management (admins/mods only)
+.modify command with subcommands (wclosed, whandled, closed, handled) to adjust user statistics (admins/mods only)
+Persistent database storage for tickets, user statistics, credits, leaderboard data, and ticket limits
+.lb add (user) co-owner (the co-owner is the label that they will be under and the user is the discord user.)
+.lb remove (user) co-owner (the co-owner is the label that they will be removed from and the user is the discord user.)
+
+for the .lb command please use this format instead (just an example)
+*##leaderboard* 𐙚 ‧₊˚ ⋅
+<a:white_butterflies:1390909884928884886> owner
+@deli **777** all - **0** 7d
+
+<:piano_smile:1396035361091752080> co-owner
+no one here yet so this shouldnt be displayed
+
+<:miffy_plush:1390909592543957063> admin
+@allal **777** all - **0** 7d
+
+<a:cutebunny:1390853287347228914> staff
+no one here yet so this section shouldn't be displayed until we add someone to the lb
+
+<a:pink_bubbles:1396386164637958294> trial
+no one here yet so this should be displayed 
+
+this should just be for the .lb and the .lb w command. for the .lb w command i want u to make the highest number of handles be the highest person of their label and 2nd highest will be under them, and then follows with the next on whoever has the other highest. this should be an embed
+
+for the .lb c command please use this format instead (just an example)
+*##closed leaderboard* 𐙚 ‧₊˚ ⋅
+<a:white_butterflies:1390909884928884886> owner
+@deli **777** all - **0** 7d
+
+<:piano_smile:1396035361091752080> co-owner
+no one here yet so this shouldnt be displayed
+
+<:miffy_plush:1390909592543957063> admin
+@allal **777** all - **0** 7d
+
+<a:cutebunny:1390853287347228914> staff
+no one here yet so this section shouldn't be displayed until we add someone to the lb
+
+<a:pink_bubbles:1396386164637958294> trial
+no one here yet so this should be displayed
+
+this should just be for the .lb c and the .lb cw command. for the .lb cw command i want u to make the highest number of closes be the highest person of their label and 2nd highest will be under them, and then follows with the next on whoever has the other highest. this should be an embed
