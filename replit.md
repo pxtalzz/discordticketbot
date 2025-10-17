@@ -6,15 +6,21 @@ This is a Discord ticket management and staff statistics bot built with discord.
 
 # Recent Changes
 
-**October 17, 2025**
+**October 17, 2025** (Latest Update)
+- Added .setstaffroles command for configurable staff permissions
+- Updated all commands to use silent permission checks (no error messages)
+- Redesigned stats embed with new 3x2 layout (Rank/Closed/Handled stats)
+- Enhanced stats image: centered username, Discord join date, bigger pfp (200x200), proportional background
+- Updated ticket creation to ping role and show type as heading
+- Made .rename command silent (no confirmation)
+- Updated .claim to send embed reply and delete original message
+- Changed leaderboard formatting to bold text headings
+- Added database migration for existing deployments
 - Implemented complete ticket system with 5 categories (middleman, pilot, verify, giveaway, other)
-- Added all staff commands (.fm, .add, .remove, .rename, .profile edit, .stats)
-- Built leaderboard system with exact custom formatting as specified
 - Created stats image generation (885x303px) with Discord banner/avatar support
 - Implemented automated Sunday 4 AM EST weekly reset and leaderboard posting
 - Set up database schema with SQLite for persistent storage
 - Added admin commands (.modify, .lb add/remove, .claim force, .unclaim force)
-- Configured ephemeral "tickets full" message when limit reached
 
 # User Preferences
 
