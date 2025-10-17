@@ -3,6 +3,7 @@ modules = ["python-3.11"]
 
 [nix]
 channel = "stable-25_05"
+packages = ["freetype", "lcms2", "libimagequant", "libjpeg", "libtiff", "libwebp", "libxcrypt", "openjpeg", "tcl", "tk", "zlib"]
 
 [unitTest]
 language = "python3"
@@ -18,20 +19,24 @@ deploymentTarget = "cloudrun"
 expertMode = true
 
 [workflows]
+runButton = "Project"
 
 [[workflows.workflow]]
 name = "Discord Bot"
 mode = "sequential"
-author = 48736450
+author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = ""
+args = "python bot.py"
+
+[workflows.workflow.metadata]
+outputType = "console"
 
 [[workflows.workflow]]
 name = "Project"
 mode = "parallel"
-author = 48736450
+author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
