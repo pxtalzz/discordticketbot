@@ -24,6 +24,12 @@ class Database:
                 )
             ''')
             
+            async with db.execute("PRAGMA table_info(server_config)") as cursor:
+                columns = await cursor.fetchall()
+                column_names = [col[1] for col in columns]
+                if 'staff_role_ids' not in column_names and column_names:
+                    await db.execute('ALTER TABLE server_config ADD COLUMN staff_role_ids TEXT')
+            
             await db.execute('''
                 CREATE TABLE IF NOT EXISTS user_stats (
                     user_id INTEGER PRIMARY KEY,
@@ -51,7 +57,8 @@ class Database:
                     archive_channel_id INTEGER,
                     ticket_message_id INTEGER,
                     ticket_channel_id INTEGER,
-                    leaderboard_channel_id INTEGER
+                    leaderboard_channel_id INTEGER,
+                    staff_role_ids TEXT
                 )
             ''')
             
@@ -332,3 +339,23 @@ class Database:
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute(query, params)
             await db.commit()
+    
+    async def set_staff_roles(self, guild_id: int, role_ids: str):
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute('''
+                INSERT INTO server_config (guild_id, staff_role_ids)
+                VALUES (?, ?)
+                ON CONFLICT(guild_id) DO UPDATE SET staff_role_ids = ?
+            ''', (guild_id, role_ids, role_ids))
+            await db.commit()
+    
+    async def get_staff_roles(self, guild_id: int) -> List[int]:
+        async with aiosqlite.connect(self.db_path) as db:
+            async with db.execute(
+                'SELECT staff_role_ids FROM server_config WHERE guild_id = ?',
+                (guild_id,)
+            ) as cursor:
+                result = await cursor.fetchone()
+                if result and result[0]:
+                    return [int(rid) for rid in result[0].split(',')]
+                return []

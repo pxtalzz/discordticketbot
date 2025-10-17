@@ -35,6 +35,14 @@ ROLE_EMOJIS = {
 }
 
 ROLE_ORDER = ['owner', 'co-owner', 'admin', 'staff', 'trial']
+TRACKED_ROLE_IDS = [1390953916082028635, 1396008058693615678, 1428758437646307470]
+PING_ROLE_ID = 1407881544202195004
+
+async def has_staff_permission(member: discord.Member, guild_id: int) -> bool:
+    staff_roles = await db.get_staff_roles(guild_id)
+    if not staff_roles:
+        return False
+    return any(role.id in staff_roles for role in member.roles)
 
 class TicketCategorySelect(Select):
     def __init__(self):
@@ -76,11 +84,11 @@ class TicketCategorySelect(Select):
         await thread.add_user(interaction.user)
         
         embed = discord.Embed(
-            title=f"Ticket #{ticket_number}",
-            description=f"Category: **{category.title()}**\nOpened by: {interaction.user.mention}",
+            title=category.title(),
+            description=f"Opened by {interaction.user.mention}",
             color=EMBED_COLOR
         )
-        await thread.send(embed=embed)
+        await thread.send(f"<@&{PING_ROLE_ID}>", embed=embed)
         
         await interaction.response.send_message(
             f"Ticket created! {thread.mention}",
@@ -168,45 +176,66 @@ async def setleaderboard(ctx, channel: discord.TextChannel):
     await ctx.send(f"Leaderboard channel set to {channel.mention}!", delete_after=5)
 
 @bot.command()
+async def setstaffroles(ctx, *roles: discord.Role):
+    if ctx.author.id != ctx.guild.owner_id:
+        await ctx.send("Only the server owner can use this command!", delete_after=5)
+        return
+    
+    if not roles:
+        await ctx.send("Please provide at least one role!", delete_after=5)
+        return
+    
+    role_ids = ','.join(str(role.id) for role in roles)
+    await db.set_staff_roles(ctx.guild.id, role_ids)
+    role_mentions = ' '.join(role.mention for role in roles)
+    await ctx.send(f"Staff roles set to: {role_mentions}", delete_after=5)
+
+@bot.command()
 async def claim(ctx, force: str = None):
     if not isinstance(ctx.channel, discord.Thread):
-        await ctx.send("This command can only be used in ticket threads!")
         return
     
     ticket_info = await db.get_ticket_info(ctx.channel.id)
     if not ticket_info:
-        await ctx.send("This is not a valid ticket thread!")
         return
     
     if force == "force":
         if not any(role.name.lower() in ['admin', 'mod', 'moderator'] for role in ctx.author.roles):
-            await ctx.send("You don't have permission to force claim!")
             return
         
         if ticket_info['handler_id']:
             await db.unclaim_ticket(ctx.channel.id)
+    else:
+        if not await has_staff_permission(ctx.author, ctx.guild.id):
+            return
     
     await db.claim_ticket(ctx.channel.id, ctx.author.id)
-    await ctx.send(f"{ctx.author.mention} has claimed this ticket!")
+    
+    embed = discord.Embed(
+        description=f"{ctx.author.mention} has claimed the ticket",
+        color=EMBED_COLOR
+    )
+    
+    msg = await ctx.send(embed=embed, reference=ctx.message)
+    await ctx.message.delete()
 
 @bot.command()
 async def unclaim(ctx, force: str = None):
     if not isinstance(ctx.channel, discord.Thread):
-        await ctx.send("This command can only be used in ticket threads!")
         return
     
     ticket_info = await db.get_ticket_info(ctx.channel.id)
     if not ticket_info:
-        await ctx.send("This is not a valid ticket thread!")
         return
     
     if force == "force":
         if not any(role.name.lower() in ['admin', 'mod', 'moderator'] for role in ctx.author.roles):
-            await ctx.send("You don't have permission to force unclaim!")
             return
-    elif ticket_info['handler_id'] != ctx.author.id:
-        await ctx.send("You haven't claimed this ticket!")
-        return
+    else:
+        if not await has_staff_permission(ctx.author, ctx.guild.id):
+            return
+        if ticket_info['handler_id'] != ctx.author.id:
+            return
     
     await db.unclaim_ticket(ctx.channel.id)
     await ctx.send("Ticket has been unclaimed!")
@@ -214,11 +243,9 @@ async def unclaim(ctx, force: str = None):
 @bot.command()
 async def close(ctx, *, reason: str = "No reason provided"):
     if not isinstance(ctx.channel, discord.Thread):
-        await ctx.send("This command can only be used in ticket threads!")
         return
     
-    if not any(role.name.lower() in ['admin', 'mod', 'moderator'] for role in ctx.author.roles):
-        await ctx.send("You don't have permission to close tickets!")
+    if not await has_staff_permission(ctx.author, ctx.guild.id):
         return
     
     ticket_info = await db.get_ticket_info(ctx.channel.id)
@@ -301,8 +328,7 @@ async def close(ctx, *, reason: str = "No reason provided"):
 
 @bot.command()
 async def fm(ctx):
-    if not any(role.name.lower() in ['admin', 'mod', 'moderator', 'staff'] for role in ctx.author.roles):
-        await ctx.send("You don't have permission to use this command!")
+    if not await has_staff_permission(ctx.author, ctx.guild.id):
         return
     
     messages = []
@@ -320,11 +346,9 @@ async def fm(ctx):
 @bot.command()
 async def add(ctx, member: discord.Member):
     if not isinstance(ctx.channel, discord.Thread):
-        await ctx.send("This command can only be used in threads!")
         return
     
-    if not any(role.name.lower() in ['admin', 'mod', 'moderator', 'staff'] for role in ctx.author.roles):
-        await ctx.send("You don't have permission to use this command!")
+    if not await has_staff_permission(ctx.author, ctx.guild.id):
         return
     
     await ctx.channel.add_user(member)
@@ -333,11 +357,9 @@ async def add(ctx, member: discord.Member):
 @bot.command()
 async def remove(ctx, member: discord.Member):
     if not isinstance(ctx.channel, discord.Thread):
-        await ctx.send("This command can only be used in threads!")
         return
     
-    if not any(role.name.lower() in ['admin', 'mod', 'moderator', 'staff'] for role in ctx.author.roles):
-        await ctx.send("You don't have permission to use this command!")
+    if not await has_staff_permission(ctx.author, ctx.guild.id):
         return
     
     await ctx.channel.remove_user(member)
@@ -346,31 +368,26 @@ async def remove(ctx, member: discord.Member):
 @bot.command()
 async def rename(ctx, *, name: str):
     if not isinstance(ctx.channel, discord.Thread):
-        await ctx.send("This command can only be used in threads!")
         return
     
-    if not any(role.name.lower() in ['admin', 'mod', 'moderator', 'staff'] for role in ctx.author.roles):
-        await ctx.send("You don't have permission to use this command!")
+    if not await has_staff_permission(ctx.author, ctx.guild.id):
         return
     
     await ctx.channel.edit(name=name)
-    await ctx.send(f"Thread renamed to {name}!")
 
 @bot.command()
 async def profile(ctx, action: str = None, *, message: str = None):
     if action == "edit":
-        if not any(role.name.lower() in ['admin', 'mod', 'moderator', 'staff'] for role in ctx.author.roles):
-            await ctx.send("You don't have permission to edit your profile!")
+        if not await has_staff_permission(ctx.author, ctx.guild.id):
             return
         
         if not message:
-            await ctx.send("Please provide a profile message!")
             return
         
         await db.update_profile_message(ctx.author.id, message)
         await ctx.send("Profile message updated!")
     else:
-        await ctx.send("Usage: `.profile edit <message>`")
+        return
 
 @bot.command()
 async def stats(ctx, member: discord.Member = None):
@@ -386,27 +403,34 @@ async def stats(ctx, member: discord.Member = None):
     
     avatar_url = member.display_avatar.url
     
-    image_data = await create_stats_image(member, banner_url, avatar_url)
+    join_date = None
+    for role_id in TRACKED_ROLE_IDS:
+        role = ctx.guild.get_role(role_id)
+        if role and role in member.roles:
+            join_date = stats.get('role_assignment_date', 'N/A')
+            break
+    
+    image_data = await create_stats_image(member, banner_url, avatar_url, member.name, member.created_at)
     
     embed = discord.Embed(
-        title=f"{member.name}'s Stats",
+        title=f"{member.name}",
+        description=stats.get('profile_message', ''),
         color=EMBED_COLOR
     )
     
-    total_all_time = stats['all_time_handled'] + stats['all_time_closed']
-    total_weekly = stats['weekly_handled'] + stats['weekly_closed']
+    rank_value = lb_role.title() if lb_role else "N/A"
+    closed_total = stats['all_time_closed']
+    closed_7d = stats['weekly_closed']
+    handled_total = stats['all_time_handled']
+    handled_7d = stats['weekly_handled']
     
-    embed.add_field(name="All-Time Stats", value=f"Handled: {stats['all_time_handled']}\nClosed: {stats['all_time_closed']}\nTotal: {total_all_time}", inline=True)
-    embed.add_field(name="Weekly Stats", value=f"Handled: {stats['weekly_handled']}\nClosed: {stats['weekly_closed']}\nTotal: {total_weekly}", inline=True)
+    embed.add_field(name="Rank", value=rank_value, inline=True)
+    embed.add_field(name="Closed Total", value=str(closed_total), inline=True)
+    embed.add_field(name="Closed 7d", value=str(closed_7d), inline=True)
     
-    if lb_role:
-        embed.add_field(name="Rank", value=lb_role.title(), inline=True)
-    
-    if stats['role_assignment_date']:
-        embed.add_field(name="Role Assignment Date", value=stats['role_assignment_date'], inline=True)
-    
-    if stats['profile_message']:
-        embed.add_field(name="Profile Message", value=stats['profile_message'], inline=False)
+    embed.add_field(name="Join Date", value=join_date if join_date else "N/A", inline=True)
+    embed.add_field(name="Handled Total", value=str(handled_total), inline=True)
+    embed.add_field(name="Handled 7d", value=str(handled_7d), inline=True)
     
     embed.set_image(url="attachment://stats.png")
     
@@ -417,16 +441,13 @@ async def stats(ctx, member: discord.Member = None):
 async def lb(ctx, subcommand: str = None, member: discord.Member = None, role: str = None):
     if subcommand == "add":
         if not any(r.name.lower() in ['admin', 'mod', 'moderator'] for r in ctx.author.roles):
-            await ctx.send("You don't have permission to use this command!")
             return
         
         if not member or not role:
-            await ctx.send("Usage: `.lb add @user role`")
             return
         
         role_lower = role.lower()
         if role_lower not in ROLE_ORDER:
-            await ctx.send(f"Invalid role! Valid roles: {', '.join(ROLE_ORDER)}")
             return
         
         await db.add_leaderboard_role(member.id, role_lower)
@@ -435,11 +456,9 @@ async def lb(ctx, subcommand: str = None, member: discord.Member = None, role: s
     
     elif subcommand == "remove":
         if not any(r.name.lower() in ['admin', 'mod', 'moderator'] for r in ctx.author.roles):
-            await ctx.send("You don't have permission to use this command!")
             return
         
         if not member or not role:
-            await ctx.send("Usage: `.lb remove @user role`")
             return
         
         role_lower = role.lower()
@@ -463,8 +482,7 @@ async def lb(ctx, subcommand: str = None, member: discord.Member = None, role: s
         await show_leaderboard(ctx, "all_time", "handled")
 
 async def show_leaderboard(ctx, timeframe: str, stat_type: str):
-    if not any(role.name.lower() in ['admin', 'mod', 'moderator', 'staff'] for role in ctx.author.roles):
-        await ctx.send("You don't have permission to view the leaderboard!")
+    if not await has_staff_permission(ctx.author, ctx.guild.id):
         return
     
     leaderboard_data = await db.get_leaderboard_data(
@@ -497,9 +515,9 @@ async def show_leaderboard(ctx, timeframe: str, stat_type: str):
         user_roles[role].sort(key=lambda x: x[3], reverse=True)
     
     if stat_type == 'closed':
-        title = "*##closed leaderboard* 𐙚 ‧₊˚ ⋅"
+        title = "**CLOSED LEADERBOARD** 𐙚 ‧₊˚ ⋅"
     else:
-        title = "*##leaderboard* 𐙚 ‧₊˚ ⋅"
+        title = "**LEADERBOARD** 𐙚 ‧₊˚ ⋅"
     
     description = ""
     for role in ROLE_ORDER:
@@ -527,12 +545,10 @@ async def show_leaderboard(ctx, timeframe: str, stat_type: str):
 @bot.command()
 async def modify(ctx, member: discord.Member, stat: str, value: int):
     if not any(role.name.lower() in ['admin', 'mod', 'moderator'] for role in ctx.author.roles):
-        await ctx.send("You don't have permission to use this command!")
         return
     
     valid_stats = ['wclosed', 'whandled', 'closed', 'handled']
     if stat.lower() not in valid_stats:
-        await ctx.send(f"Invalid stat! Valid stats: {', '.join(valid_stats)}")
         return
     
     stat_map = {
@@ -593,7 +609,7 @@ async def build_leaderboard_embed(timeframe: str, stat_type: str):
     for role in user_roles:
         user_roles[role].sort(key=lambda x: x[3], reverse=True)
     
-    title = "*##leaderboard* 𐙚 ‧₊˚ ⋅" if timeframe == "all_time" else "*##weekly leaderboard* 𐙚 ‧₊˚ ⋅"
+    title = "**LEADERBOARD** 𐙚 ‧₊˚ ⋅" if timeframe == "all_time" else "**WEEKLY LEADERBOARD** 𐙚 ‧₊˚ ⋅"
     
     description = ""
     for role in ROLE_ORDER:
