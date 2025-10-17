@@ -6,7 +6,22 @@ This is a Discord ticket management and staff statistics bot built with discord.
 
 # Recent Changes
 
-**October 17, 2025** (Latest Update - Major Improvements)
+**October 17, 2025** (Latest Update - Bug Fixes & Improvements)
+- Fixed .stats command to ensure only one message is sent (now deletes command message after sending stats)
+- Updated leaderboard role labels to: owner, co-owner, head admin, admin, staff, trial staff
+- Enhanced close command confirmation:
+  - Shows "Ticket Confirmation" as title with "are you sure you want to close?" subtitle
+  - Displays "Credit given: (handler)" field showing who will receive credit
+- Added final closing embed:
+  - Title: "ticket closed <a:Heart:1396388971818520576>"
+  - Shows closer mention and reason in description
+- Fixed all type errors and LSP diagnostics:
+  - Changed None default parameters to empty strings for type safety
+  - Added null checks for ticket_info retrieval
+  - Added is_running() checks before starting background tasks
+- Verified bot runs successfully as "kirei#2389"
+
+**October 17, 2025** (Previous Update - Major Improvements)
 - Changed max tickets message to "TAIYO is currently at max tickets. Please try again later."
 - Enhanced stats system:
   - Increased profile picture size from 200x200 to 250x250
