@@ -150,6 +150,24 @@ async def ticketlimit(ctx, limit: int):
     await ctx.send(f"Ticket limit set to {limit}!", delete_after=5)
 
 @bot.command()
+async def setarchive(ctx, channel: discord.TextChannel):
+    if ctx.author.id != ctx.guild.owner_id:
+        await ctx.send("Only the server owner can use this command!", delete_after=5)
+        return
+    
+    await db.set_archive_channel(ctx.guild.id, channel.id)
+    await ctx.send(f"Archive channel set to {channel.mention}!", delete_after=5)
+
+@bot.command()
+async def setleaderboard(ctx, channel: discord.TextChannel):
+    if ctx.author.id != ctx.guild.owner_id:
+        await ctx.send("Only the server owner can use this command!", delete_after=5)
+        return
+    
+    await db.set_leaderboard_channel(ctx.guild.id, channel.id)
+    await ctx.send(f"Leaderboard channel set to {channel.mention}!", delete_after=5)
+
+@bot.command()
 async def claim(ctx, force: str = None):
     if not isinstance(ctx.channel, discord.Thread):
         await ctx.send("This command can only be used in ticket threads!")
