@@ -6,16 +6,26 @@ This is a Discord ticket management and staff statistics bot built with discord.
 
 # Recent Changes
 
-**October 17, 2025** (Latest Update)
+**October 17, 2025** (Latest Update - Bug Fixes & Enhancements)
+- Fixed max tickets message to display "Max tickets are currently opened, try again later."
+- Enhanced stats image display:
+  - Increased profile picture size from 200x200 to 250x250
+  - Moved username down and increased font size to 48px for better visibility
+  - Relocated staff join date to bottom right corner with rounded background
+  - Changed join date to show staff role assignment date instead of Discord account creation
+- Added .setroles command for configurable role-based permissions (admin, owner, moderator, staff)
+- Fixed .setstaffroles database initialization with proper column migration
+- Added new database columns for role type management (admin_role_ids, owner_role_ids, moderator_role_ids)
+- Verified bot runs successfully as "kirei#2389"
+
+**Previous Updates**
 - Added .setstaffroles command for configurable staff permissions
 - Updated all commands to use silent permission checks (no error messages)
 - Redesigned stats embed with new 3x2 layout (Rank/Closed/Handled stats)
-- Enhanced stats image: centered username, Discord join date, bigger pfp (200x200), proportional background
 - Updated ticket creation to ping role and show type as heading
 - Made .rename command silent (no confirmation)
 - Updated .claim to send embed reply and delete original message
 - Changed leaderboard formatting to bold text headings
-- Added database migration for existing deployments
 - Implemented complete ticket system with 5 categories (middleman, pilot, verify, giveaway, other)
 - Created stats image generation (885x303px) with Discord banner/avatar support
 - Implemented automated Sunday 4 AM EST weekly reset and leaderboard posting
@@ -39,7 +49,7 @@ Preferred communication style: Simple, everyday language.
   - `tickets`: Tracks ticket lifecycle with auto-incrementing ticket numbers, channel associations, handler/closer assignments, and status tracking
   - `user_stats`: Stores all-time and weekly statistics (handled/closed counts), custom profile messages, and role assignment dates
   - `leaderboard_roles`: Many-to-many relationship for user-role assignments in leaderboard hierarchy
-  - `server_config`: Guild-specific settings including ticket limits, archive channels, and leaderboard channels
+  - `server_config`: Guild-specific settings including ticket limits, archive channels, leaderboard channels, and role type configurations (staff_role_ids, admin_role_ids, owner_role_ids, moderator_role_ids)
 
 ## Ticket System Architecture
 - **Persistent UI Components**: Dropdown select menu (TicketCategorySelect) for ticket creation with 5 categories (middleman, pilot, verify, giveaway, other)
@@ -49,7 +59,7 @@ Preferred communication style: Simple, everyday language.
   3. Closure with reason and confirmation
   4. Transcript generation and archiving
   5. DM notification to ticket opener
-- **Limit Enforcement**: Configurable maximum open tickets with ephemeral error messages when full
+- **Limit Enforcement**: Configurable maximum open tickets with ephemeral message "Max tickets are currently opened, try again later." when full
 - **Credit System**: Automatic credit attribution on claim/unclaim actions
 
 ## Statistics & Leaderboard System
@@ -67,14 +77,17 @@ Preferred communication style: Simple, everyday language.
 - **Background Logic**:
   - Primary: Blurred Discord banner if available
   - Fallback: Blurred avatar image
-- **Avatar Overlay**: Circular masked avatar positioned on left side
+- **Avatar Overlay**: Circular masked avatar (250x250) positioned on left side
+- **Username Display**: Centered, 48px bold font, positioned at y=120 for better layout
+- **Join Date Badge**: Staff role assignment date displayed in bottom-right with rounded rectangle background
 - **Async Image Fetching**: Uses aiohttp for non-blocking image downloads
 
 ## Permission Structure
-- **Owner-only**: `.sendticket`, `.ticketlimit`, server configuration commands
+- **Owner-only**: `.sendticket`, `.ticketlimit`, `.setstaffroles`, `.setroles`, server configuration commands
 - **Admin/Mod**: `.claim force`, `.unclaim force`, `.modify`, `.close`
 - **Staff**: `.claim`, `.unclaim`, `.add`, `.remove`, `.rename`, `.profile edit`, `.stats`, `.lb` commands
 - **Role-based Access**: Leaderboard management (`.lb add`/`.lb remove`) restricted to admins
+- **Configurable Roles**: Use `.setroles <type> @role1 @role2...` to set admin, owner, moderator, or staff roles
 
 ## Transcript System
 - **Archive Channel**: Dedicated channel for permanent transcript storage
