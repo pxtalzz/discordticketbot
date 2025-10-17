@@ -9,7 +9,7 @@ async def create_stats_image(
     banner_url: Optional[str],
     avatar_url: str,
     username: str,
-    created_at: datetime,
+    join_date: Optional[str],
     badges: list = []
 ) -> io.BytesIO:
     width = 885
@@ -73,27 +73,46 @@ async def create_stats_image(
             if resp.status == 200:
                 avatar_data = await resp.read()
                 avatar = Image.open(io.BytesIO(avatar_data))
-                avatar = avatar.resize((200, 200), Image.Resampling.LANCZOS)
+                avatar = avatar.resize((250, 250), Image.Resampling.LANCZOS)
                 
-                mask = Image.new('L', (200, 200), 0)
+                mask = Image.new('L', (250, 250), 0)
                 mask_draw = ImageDraw.Draw(mask)
-                mask_draw.ellipse((0, 0, 200, 200), fill=255)
+                mask_draw.ellipse((0, 0, 250, 250), fill=255)
                 
-                img.paste(avatar, (30, 51), mask)
+                img.paste(avatar, (30, 26), mask)
     
     draw = ImageDraw.Draw(img)
     
     try:
-        font_large = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 32)
-        font_small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16)
+        font_large = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 48)
+        font_small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 18)
     except:
         font_large = ImageFont.load_default()
         font_small = ImageFont.load_default()
     
-    draw.text((width // 2, 40), username, fill=(255, 255, 255), font=font_large, anchor="mt")
+    draw.text((width // 2, 120), username, fill=(255, 255, 255), font=font_large, anchor="mt")
     
-    discord_join = created_at.strftime("%m/%d/%Y")
-    draw.text((width - 20, 20), f"Discord: {discord_join}", fill=(200, 200, 200), font=font_small, anchor="rt")
+    if join_date and join_date != 'N/A':
+        join_text = f"Joined: {join_date}"
+        text_bbox = draw.textbbox((0, 0), join_text, font=font_small)
+        text_width = text_bbox[2] - text_bbox[0]
+        text_height = text_bbox[3] - text_bbox[1]
+        
+        padding = 15
+        circle_x = width - text_width - padding * 2 - 20
+        circle_y = height - text_height - padding * 2 - 20
+        circle_width = text_width + padding * 2
+        circle_height = text_height + padding * 2
+        
+        draw.rounded_rectangle(
+            ((circle_x, circle_y), (circle_x + circle_width, circle_y + circle_height)),
+            radius=20,
+            fill=(40, 40, 40, 200)
+        )
+        
+        text_x = circle_x + padding
+        text_y = circle_y + padding
+        draw.text((text_x, text_y), join_text, fill=(255, 255, 255), font=font_small)
     
     output = io.BytesIO()
     img.save(output, format='PNG')

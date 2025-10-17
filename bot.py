@@ -1,17 +1,12 @@
 import discord
 from discord.ext import commands, tasks
-from discord import app_commands
 from discord.ui import View, Select, Button
 import os
 from dotenv import load_dotenv
 from database import Database
-from datetime import datetime, timedelta
+from datetime import datetime
 import pytz
-import asyncio
-from typing import Optional
 import io
-from PIL import Image, ImageDraw, ImageFilter
-import aiohttp
 from image_utils import create_stats_image
 
 load_dotenv()
@@ -47,11 +42,11 @@ async def has_staff_permission(member: discord.Member, guild_id: int) -> bool:
 class TicketCategorySelect(Select):
     def __init__(self):
         options = [
-            discord.SelectOption(label="Middleman", value="middleman", emoji="🤝"),
-            discord.SelectOption(label="Pilot", value="pilot", emoji="✈️"),
-            discord.SelectOption(label="Verify", value="verify", emoji="✅"),
-            discord.SelectOption(label="Giveaway", value="giveaway", emoji="🎁"),
-            discord.SelectOption(label="Other", value="other", emoji="❓")
+            discord.SelectOption(label="Middleman", value="middleman", emoji="<a:white_butterflies:1390909884928884886>"),
+            discord.SelectOption(label="Pilot", value="pilot", emoji="<a:white_butterflies:1390909884928884886>"),
+            discord.SelectOption(label="Verify", value="verify", emoji="<a:white_butterflies:1390909884928884886>"),
+            discord.SelectOption(label="Giveaway", value="giveaway", emoji="<a:white_butterflies:1390909884928884886>"),
+            discord.SelectOption(label="Other", value="other", emoji="<a:white_butterflies:1390909884928884886>")
         ]
         super().__init__(placeholder="Select a ticket category...", options=options, min_values=1, max_values=1)
     
@@ -63,7 +58,7 @@ class TicketCategorySelect(Select):
         
         if ticket_limit > 0 and open_tickets >= ticket_limit:
             await interaction.response.send_message(
-                "Tickets are currently full. try again later!",
+                "Max tickets are currently opened, try again later.",
                 ephemeral=True
             )
             return
@@ -189,6 +184,31 @@ async def setstaffroles(ctx, *roles: discord.Role):
     await db.set_staff_roles(ctx.guild.id, role_ids)
     role_mentions = ' '.join(role.mention for role in roles)
     await ctx.send(f"Staff roles set to: {role_mentions}", delete_after=5)
+
+@bot.command()
+async def setroles(ctx, role_type: str, *roles: discord.Role):
+    if ctx.author.id != ctx.guild.owner_id:
+        await ctx.send("Only the server owner can use this command!", delete_after=5)
+        return
+    
+    valid_types = ['admin', 'owner', 'moderator', 'staff']
+    if role_type.lower() not in valid_types:
+        await ctx.send(f"Invalid role type! Valid types: {', '.join(valid_types)}", delete_after=5)
+        return
+    
+    if not roles:
+        await ctx.send("Please provide at least one role!", delete_after=5)
+        return
+    
+    role_ids = ','.join(str(role.id) for role in roles)
+    
+    if role_type.lower() == 'staff':
+        await db.set_staff_roles(ctx.guild.id, role_ids)
+    else:
+        await db.set_role_type(ctx.guild.id, role_type.lower(), role_ids)
+    
+    role_mentions = ' '.join(role.mention for role in roles)
+    await ctx.send(f"{role_type.title()} roles set to: {role_mentions}", delete_after=5)
 
 @bot.command()
 async def claim(ctx, force: str = None):
@@ -323,7 +343,7 @@ async def close(ctx, *, reason: str = "No reason provided"):
     except:
         pass
     
-    await msg.edit(content=f"Ticket closed! Transcript saved.", view=None)
+    await msg.edit(content="Ticket closed! Transcript saved.", view=None)
     await ctx.channel.edit(archived=True, locked=True)
 
 @bot.command()
@@ -410,7 +430,7 @@ async def stats(ctx, member: discord.Member = None):
             join_date = stats.get('role_assignment_date', 'N/A')
             break
     
-    image_data = await create_stats_image(member, banner_url, avatar_url, member.name, member.created_at)
+    image_data = await create_stats_image(member, banner_url, avatar_url, member.name, join_date)
     
     embed = discord.Embed(
         title=f"{member.name}",
