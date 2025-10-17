@@ -2,7 +2,6 @@ from PIL import Image, ImageDraw, ImageFont, ImageFilter
 import aiohttp
 import io
 from typing import Optional
-from datetime import datetime
 
 async def create_stats_image(
     user,
@@ -86,14 +85,36 @@ async def create_stats_image(
     try:
         font_large = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 60)
         font_small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 18)
-    except:
+    except IOError:
         font_large = ImageFont.load_default()
         font_small = ImageFont.load_default()
     
-    draw.text((width // 2, 120), username, fill=(255, 255, 255), font=font_large, anchor="mt")
+    username_bbox = draw.textbbox((0, 0), username, font=font_large)
+    username_width = username_bbox[2] - username_bbox[0]
+    
+    avatar_right = 280
+    left_margin = 25
+    
+    min_text_x_for_left = avatar_right + left_margin + (username_width / 2)
+    center_x = width / 2
+    
+    text_x = max(center_x, min_text_x_for_left)
+    
+    draw.text((int(text_x), 120), username, fill=(255, 255, 255), font=font_large, anchor="mt")
     
     if join_date and join_date != 'N/A':
-        join_text = f"Joined: {join_date}"
+        if '<t:' in join_date:
+            join_text = join_date.split(':')[1].split(':')[0]
+            try:
+                from datetime import datetime
+                timestamp = int(join_text)
+                dt = datetime.fromtimestamp(timestamp)
+                join_text = f"{dt.strftime('%b %d, %Y')}"
+            except (ValueError, IndexError):
+                join_text = "N/A"
+        else:
+            join_text = join_date
+        
         text_bbox = draw.textbbox((0, 0), join_text, font=font_small)
         text_width = text_bbox[2] - text_bbox[0]
         text_height = text_bbox[3] - text_bbox[1]

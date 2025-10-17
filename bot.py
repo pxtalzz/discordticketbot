@@ -31,7 +31,7 @@ ROLE_EMOJIS = {
 }
 
 ROLE_ORDER = ['owner', 'co-owner', 'head admin', 'admin', 'staff', 'trial staff']
-TRACKED_ROLE_IDS = [1390953916082028635, 1396008058693615678, 1428758437646307470]
+TRACKED_ROLE_IDS = [1390590641846878330, 1396033952535285790, 1428181145899630785, 1390954184530202624, 1390954010650873918, 1390953916082028635, 1395998827147952249, 1390953447393722410, 1396008058693615678, 1390953663694114878, 1428758437646307470]
 PING_ROLE_ID = 1407881544202195004
 
 STAFF_ROLE_HIERARCHY = {
@@ -138,10 +138,16 @@ class ConfirmView(View):
 async def on_ready():
     await db.init_db()
     print(f'Bot is ready! Logged in as {bot.user}')
-    if not weekly_reset_task.is_running():
-        weekly_reset_task.start()
-    if not sunday_leaderboard.is_running():
-        sunday_leaderboard.start()
+    try:
+        if not weekly_reset_task.is_running():
+            weekly_reset_task.start()
+    except RuntimeError:
+        pass
+    try:
+        if not sunday_leaderboard.is_running():
+            sunday_leaderboard.start()
+    except RuntimeError:
+        pass
 
 @bot.command()
 async def sendticket(ctx):
@@ -168,6 +174,10 @@ async def ticketlimit(ctx, limit: int):
     
     await db.set_ticket_limit(ctx.guild.id, limit)
     await ctx.send(f"Ticket limit set to {limit}!", delete_after=5)
+    try:
+        await ctx.message.delete()
+    except discord.errors.HTTPException:
+        pass
 
 @bot.command()
 async def setarchive(ctx, channel: discord.TextChannel):
@@ -177,6 +187,10 @@ async def setarchive(ctx, channel: discord.TextChannel):
     
     await db.set_archive_channel(ctx.guild.id, channel.id)
     await ctx.send(f"Archive channel set to {channel.mention}!", delete_after=5)
+    try:
+        await ctx.message.delete()
+    except discord.errors.HTTPException:
+        pass
 
 @bot.command()
 async def setleaderboard(ctx, channel: discord.TextChannel):
@@ -186,6 +200,10 @@ async def setleaderboard(ctx, channel: discord.TextChannel):
     
     await db.set_leaderboard_channel(ctx.guild.id, channel.id)
     await ctx.send(f"Leaderboard channel set to {channel.mention}!", delete_after=5)
+    try:
+        await ctx.message.delete()
+    except discord.errors.HTTPException:
+        pass
 
 @bot.command()
 async def setstaffroles(ctx, *roles: discord.Role):
@@ -201,31 +219,11 @@ async def setstaffroles(ctx, *roles: discord.Role):
     await db.set_staff_roles(ctx.guild.id, role_ids)
     role_mentions = ' '.join(role.mention for role in roles)
     await ctx.send(f"Staff roles set to: {role_mentions}", delete_after=5)
+    try:
+        await ctx.message.delete()
+    except discord.errors.HTTPException:
+        pass
 
-@bot.command()
-async def setroles(ctx, role_type: str, *roles: discord.Role):
-    if ctx.author.id != ctx.guild.owner_id:
-        await ctx.send("Only the server owner can use this command!", delete_after=5)
-        return
-    
-    valid_types = ['admin', 'owner', 'moderator', 'staff']
-    if role_type.lower() not in valid_types:
-        await ctx.send(f"Invalid role type! Valid types: {', '.join(valid_types)}", delete_after=5)
-        return
-    
-    if not roles:
-        await ctx.send("Please provide at least one role!", delete_after=5)
-        return
-    
-    role_ids = ','.join(str(role.id) for role in roles)
-    
-    if role_type.lower() == 'staff':
-        await db.set_staff_roles(ctx.guild.id, role_ids)
-    else:
-        await db.set_role_type(ctx.guild.id, role_type.lower(), role_ids)
-    
-    role_mentions = ' '.join(role.mention for role in roles)
-    await ctx.send(f"{role_type.title()} roles set to: {role_mentions}", delete_after=5)
 
 @bot.command()
 async def claim(ctx, force: str = ""):
@@ -356,13 +354,23 @@ async def close(ctx, *, reason: str = "No reason provided"):
         archive_channel = bot.get_channel(archive_channel_id)
         if archive_channel:
             embed_description = f"""Ticket #{ticket_info['ticket_number']}
-opened by       closed by         handled by
-{opener.mention}                   {closer.mention}                {handler.mention if handler else 'None'}
-opened at
+
+• **opened by**
+{opener.mention}
+
+• **closed by**
+{closer.mention}
+
+• **handled by**
+{handler.mention if handler else 'None'}
+
+• **opened at**
 <t:{created_timestamp}:F>
-closed at
+
+• **closed at**
 <t:{closed_timestamp}:F>
-reason
+
+• **reason**
 {reason}"""
             
             transcript_embed = discord.Embed(
@@ -379,13 +387,23 @@ reason
     
     try:
         dm_description = f"""Ticket #{ticket_info['ticket_number']}
-opened by       <:whitedash:1390902298166820996>        closed by       <:whitedash:1390902298166820996>          handled by
-{opener.mention}                                      {closer.mention}                               {handler.mention if handler else 'None'}
-opened at
+
+• **opened by**
+{opener.mention}
+
+• **closed by**
+{closer.mention}
+
+• **handled by**
+{handler.mention if handler else 'None'}
+
+• **opened at**
 <t:{created_timestamp}:F>
-closed at
+
+• **closed at**
 <t:{closed_timestamp}:F>
-reason
+
+• **reason**
 {reason}"""
         
         dm_embed = discord.Embed(
@@ -398,12 +416,12 @@ reason
         
         dm_file = discord.File(io.BytesIO(html_content.encode()), filename=f"ticket #{ticket_info['ticket_number']}.html")
         await opener.send(embed=dm_embed, file=dm_file, view=dm_button_view)
-    except:
+    except discord.errors.HTTPException:
         pass
     
     close_embed = discord.Embed(
-        title=f"ticket closed <a:Heart:1396388971818520576>",
-        description=f"this ticket was closed by {ctx.author.mention}\n\n**reason**\n{reason}",
+        title="ticket closed ✓",
+        description=f"the ticket was closed by {ctx.author.mention}\n\n**reason**\n{reason}",
         color=EMBED_COLOR
     )
     
@@ -470,6 +488,10 @@ async def profile(ctx, action: str = "", *, message: str = ""):
         
         await db.update_profile_message(ctx.author.id, message)
         await ctx.send("Profile message updated!")
+        try:
+            await ctx.message.delete()
+        except discord.errors.HTTPException:
+            pass
     else:
         return
 
@@ -503,16 +525,18 @@ async def stats(ctx, member: discord.Member = None):
                 dt = datetime.fromisoformat(role_assignment_date)
                 timestamp_int = int(dt.timestamp())
                 join_date = f"<t:{timestamp_int}:D>"
-            except:
+            except ValueError:
                 join_date = role_assignment_date
         else:
             join_date = "N/A"
     
     image_data = await create_stats_image(member, banner_url, avatar_url, member.name, join_date)
     
+    profile_message = stats.get('profile_message', '') or 'TAIYO staff'
+    
     embed = discord.Embed(
         title=f"{member.name}",
-        description=stats.get('profile_message', ''),
+        description=profile_message,
         color=EMBED_COLOR
     )
     
@@ -536,11 +560,11 @@ async def stats(ctx, member: discord.Member = None):
     await ctx.send(embed=embed, file=file)
     try:
         await ctx.message.delete()
-    except:
+    except discord.errors.HTTPException:
         pass
 
 @bot.command()
-async def lb(ctx, subcommand: str = "", member: discord.Member = None, role: str = ""):
+async def lb(ctx, subcommand: str = "", member: discord.Member = None, *, role: str = ""):
     if subcommand == "add":
         if not any(r.name.lower() in ['admin', 'mod', 'moderator'] for r in ctx.author.roles):
             return
@@ -548,12 +572,16 @@ async def lb(ctx, subcommand: str = "", member: discord.Member = None, role: str
         if not member or not role:
             return
         
-        role_lower = role.lower()
+        role_lower = role.lower().strip()
         if role_lower not in ROLE_ORDER:
             return
         
         await db.add_leaderboard_role(member.id, role_lower)
         await ctx.send(f"Added {member.mention} to {role_lower} leaderboard!")
+        try:
+            await ctx.message.delete()
+        except discord.errors.HTTPException:
+            pass
         return
     
     elif subcommand == "remove":
@@ -563,9 +591,13 @@ async def lb(ctx, subcommand: str = "", member: discord.Member = None, role: str
         if not member or not role:
             return
         
-        role_lower = role.lower()
+        role_lower = role.lower().strip()
         await db.remove_leaderboard_role(member.id, role_lower)
         await ctx.send(f"Removed {member.mention} from {role_lower} leaderboard!")
+        try:
+            await ctx.message.delete()
+        except discord.errors.HTTPException:
+            pass
         return
     
     elif subcommand == "w":
@@ -631,7 +663,7 @@ async def show_leaderboard(ctx, timeframe: str, stat_type: str):
                 try:
                     user = await bot.fetch_user(user_id)
                     description += f"@{user.name} **{all_time_stat}** all - **{weekly_stat}** 7d\n"
-                except:
+                except discord.errors.HTTPException:
                     description += f"<@{user_id}> **{all_time_stat}** all - **{weekly_stat}** 7d\n"
     
     if not description:
@@ -723,7 +755,7 @@ async def build_leaderboard_embed(timeframe: str, stat_type: str):
                 try:
                     user = await bot.fetch_user(user_id)
                     description += f"@{user.name} **{all_time_stat}** all - **{weekly_stat}** 7d\n"
-                except:
+                except discord.errors.HTTPException:
                     description += f"<@{user_id}> **{all_time_stat}** all - **{weekly_stat}** 7d\n"
     
     if not description:
