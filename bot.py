@@ -33,6 +33,20 @@ ROLE_ORDER = ['owner', 'co-owner', 'admin', 'staff', 'trial']
 TRACKED_ROLE_IDS = [1390953916082028635, 1396008058693615678, 1428758437646307470]
 PING_ROLE_ID = 1407881544202195004
 
+STAFF_ROLE_HIERARCHY = {
+    1390590641846878330: 'Owner',
+    1396033952535285790: 'Co-Owner',
+    1428181145899630785: 'Head Admin',
+    1390954184530202624: 'Admin',
+    1390954010650873918: 'Mod',
+    1390953916082028635: 'Trial Mod',
+    1395998827147952249: 'Lead MM',
+    1390953447393722410: 'MM',
+    1396008058693615678: 'Trial MM',
+    1390953663694114878: 'Pilot',
+    1428758437646307470: 'Trial Pilot'
+}
+
 async def has_staff_permission(member: discord.Member, guild_id: int) -> bool:
     staff_roles = await db.get_staff_roles(guild_id)
     if not staff_roles:
@@ -58,7 +72,7 @@ class TicketCategorySelect(Select):
         
         if ticket_limit > 0 and open_tickets >= ticket_limit:
             await interaction.response.send_message(
-                "Max tickets are currently opened, try again later.",
+                "TAIYO is currently at max tickets. Please try again later.",
                 ephemeral=True
             )
             return
@@ -284,41 +298,63 @@ async def close(ctx, *, reason: str = "No reason provided"):
     
     await db.close_ticket(ctx.channel.id, ctx.author.id, reason)
     
+    ticket_info = await db.get_ticket_info(ctx.channel.id)
+    
     messages = []
     async for message in ctx.channel.history(limit=None, oldest_first=True):
         messages.append(message)
     
-    transcript_text = ""
+    html_content = f"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Ticket #{ticket_info['ticket_number']}</title>
+    <style>
+        body {{ font-family: Arial, sans-serif; padding: 20px; background: #36393f; color: #dcddde; }}
+        .message {{ margin: 10px 0; padding: 10px; background: #40444b; border-radius: 5px; }}
+        .author {{ color: #7289da; font-weight: bold; }}
+        .timestamp {{ color: #72767d; font-size: 0.8em; }}
+    </style>
+</head>
+<body>
+    <h1>Ticket #{ticket_info['ticket_number']}</h1>
+"""
     for msg in messages:
         timestamp = msg.created_at.strftime("%Y-%m-%d %H:%M:%S")
-        transcript_text += f"[{timestamp}] {msg.author}: {msg.content}\n"
+        content = msg.content.replace('<', '&lt;').replace('>', '&gt;')
+        html_content += f'    <div class="message"><span class="author">{msg.author}</span> <span class="timestamp">{timestamp}</span><br>{content}</div>\n'
     
-    ticket_info = await db.get_ticket_info(ctx.channel.id)
+    html_content += "</body>\n</html>"
     created_at = datetime.fromisoformat(ticket_info['created_at'])
     closed_at = datetime.fromisoformat(ticket_info['closed_at'])
-    duration = closed_at - created_at
     
     opener = await bot.fetch_user(ticket_info['opener_id'])
     handler = await bot.fetch_user(ticket_info['handler_id']) if ticket_info['handler_id'] else None
     closer = await bot.fetch_user(ticket_info['closer_id'])
     
+    created_timestamp = int(created_at.timestamp())
+    closed_timestamp = int(closed_at.timestamp())
+    
     archive_channel_id = await db.get_archive_channel(ctx.guild.id)
     if archive_channel_id:
         archive_channel = bot.get_channel(archive_channel_id)
         if archive_channel:
+            embed_description = f"""Ticket #{ticket_info['ticket_number']}
+opened by       closed by         handled by
+{opener.mention}                   {closer.mention}                {handler.mention if handler else 'None'}
+opened at
+<t:{created_timestamp}:F>
+closed at
+<t:{closed_timestamp}:F>
+reason
+{reason}"""
+            
             transcript_embed = discord.Embed(
-                title=f"Ticket #{ticket_info['ticket_number']} Transcript",
+                description=embed_description,
                 color=EMBED_COLOR
             )
-            transcript_embed.add_field(name="Opener", value=opener.mention, inline=True)
-            transcript_embed.add_field(name="Handler", value=handler.mention if handler else "None", inline=True)
-            transcript_embed.add_field(name="Closer", value=closer.mention, inline=True)
-            transcript_embed.add_field(name="Created At", value=created_at.strftime("%Y-%m-%d %H:%M:%S"), inline=True)
-            transcript_embed.add_field(name="Closed At", value=closed_at.strftime("%Y-%m-%d %H:%M:%S"), inline=True)
-            transcript_embed.add_field(name="Duration", value=str(duration), inline=True)
-            transcript_embed.add_field(name="Close Reason", value=reason, inline=False)
             
-            file = discord.File(io.BytesIO(transcript_text.encode()), filename=f"ticket-{ticket_info['ticket_number']}.txt")
+            file = discord.File(io.BytesIO(html_content.encode()), filename=f"ticket #{ticket_info['ticket_number']}.html")
             
             button_view = View()
             button_view.add_item(Button(label="View Thread", url=ctx.channel.jump_url))
@@ -326,19 +362,25 @@ async def close(ctx, *, reason: str = "No reason provided"):
             await archive_channel.send(embed=transcript_embed, file=file, view=button_view)
     
     try:
+        dm_description = f"""Ticket #{ticket_info['ticket_number']}
+opened by       closed by         handled by
+{opener.mention}                   {closer.mention}                {handler.mention if handler else 'None'}
+opened at
+<t:{created_timestamp}:F>
+closed at
+<t:{closed_timestamp}:F>
+reason
+{reason}"""
+        
         dm_embed = discord.Embed(
-            title=f"Ticket #{ticket_info['ticket_number']} Closed",
-            description=f"Your ticket has been closed.\n**Reason:** {reason}",
+            description=dm_description,
             color=EMBED_COLOR
         )
-        dm_embed.add_field(name="Handler", value=handler.mention if handler else "None", inline=True)
-        dm_embed.add_field(name="Closer", value=closer.mention, inline=True)
-        dm_embed.add_field(name="Duration", value=str(duration), inline=True)
         
         dm_button_view = View()
         dm_button_view.add_item(Button(label="View Thread", url=ctx.channel.jump_url))
         
-        dm_file = discord.File(io.BytesIO(transcript_text.encode()), filename=f"ticket-{ticket_info['ticket_number']}.txt")
+        dm_file = discord.File(io.BytesIO(html_content.encode()), filename=f"ticket #{ticket_info['ticket_number']}.html")
         await opener.send(embed=dm_embed, file=dm_file, view=dm_button_view)
     except:
         pass
@@ -415,7 +457,6 @@ async def stats(ctx, member: discord.Member = None):
         member = ctx.author
     
     stats = await db.get_user_stats(member.id)
-    lb_role = await db.get_user_leaderboard_role(member.id)
     
     banner_url = None
     if member.banner:
@@ -423,12 +464,27 @@ async def stats(ctx, member: discord.Member = None):
     
     avatar_url = member.display_avatar.url
     
-    join_date = None
-    for role_id in TRACKED_ROLE_IDS:
+    highest_role = None
+    for role_id in STAFF_ROLE_HIERARCHY.keys():
         role = ctx.guild.get_role(role_id)
         if role and role in member.roles:
-            join_date = stats.get('role_assignment_date', 'N/A')
+            highest_role = STAFF_ROLE_HIERARCHY[role_id]
             break
+    
+    ping_role = ctx.guild.get_role(PING_ROLE_ID)
+    join_date = None
+    if ping_role and ping_role in member.roles:
+        role_assignment_date = stats.get('role_assignment_date')
+        if role_assignment_date and role_assignment_date != 'N/A':
+            try:
+                from datetime import datetime
+                dt = datetime.fromisoformat(role_assignment_date)
+                timestamp_int = int(dt.timestamp())
+                join_date = f"<t:{timestamp_int}:D>"
+            except:
+                join_date = role_assignment_date
+        else:
+            join_date = "N/A"
     
     image_data = await create_stats_image(member, banner_url, avatar_url, member.name, join_date)
     
@@ -438,7 +494,7 @@ async def stats(ctx, member: discord.Member = None):
         color=EMBED_COLOR
     )
     
-    rank_value = lb_role.title() if lb_role else "N/A"
+    rank_value = highest_role if highest_role else "N/A"
     closed_total = stats['all_time_closed']
     closed_7d = stats['weekly_closed']
     handled_total = stats['all_time_handled']
@@ -535,9 +591,9 @@ async def show_leaderboard(ctx, timeframe: str, stat_type: str):
         user_roles[role].sort(key=lambda x: x[3], reverse=True)
     
     if stat_type == 'closed':
-        title = "**CLOSED LEADERBOARD** 𐙚 ‧₊˚ ⋅"
+        title = "**closed leaderboard** 𐙚 ‧₊˚ ⋅"
     else:
-        title = "**LEADERBOARD** 𐙚 ‧₊˚ ⋅"
+        title = "**leaderboard** 𐙚 ‧₊˚ ⋅"
     
     description = ""
     for role in ROLE_ORDER:
@@ -629,7 +685,7 @@ async def build_leaderboard_embed(timeframe: str, stat_type: str):
     for role in user_roles:
         user_roles[role].sort(key=lambda x: x[3], reverse=True)
     
-    title = "**LEADERBOARD** 𐙚 ‧₊˚ ⋅" if timeframe == "all_time" else "**WEEKLY LEADERBOARD** 𐙚 ‧₊˚ ⋅"
+    title = "**leaderboard** 𐙚 ‧₊˚ ⋅" if timeframe == "all_time" else "**weekly leaderboard** 𐙚 ‧₊˚ ⋅"
     
     description = ""
     for role in ROLE_ORDER:
