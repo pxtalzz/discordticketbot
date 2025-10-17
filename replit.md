@@ -6,13 +6,22 @@ This is a Discord ticket management and staff statistics bot built with discord.
 
 # Recent Changes
 
-**October 17, 2025** (Latest Update - Bug Fixes & Enhancements)
-- Fixed max tickets message to display "Max tickets are currently opened, try again later."
-- Enhanced stats image display:
+**October 17, 2025** (Latest Update - Major Improvements)
+- Changed max tickets message to "TAIYO is currently at max tickets. Please try again later."
+- Enhanced stats system:
   - Increased profile picture size from 200x200 to 250x250
-  - Moved username down and increased font size to 48px for better visibility
+  - Increased username font size from 48px to 60px for better visibility
   - Relocated staff join date to bottom right corner with rounded background
-  - Changed join date to show staff role assignment date instead of Discord account creation
+  - Join date now displays as Discord timestamp showing when user received role 1407881544202195004
+  - Rank now shows highest staff role from hierarchical role list (Owner → Co-Owner → Head Admin → Admin → Mod → Trial Mod → Lead MM → MM → Trial MM → Pilot → Trial Pilot)
+- Improved transcript system:
+  - Changed transcript file format from .txt to .html with Discord-themed styling
+  - Simplified transcript filename to "ticket #X.html"
+  - Reformatted transcript embed to show opened by/closed by/handled by on one line
+  - Added Discord timestamps for opened at/closed at times
+- Updated leaderboard:
+  - Changed all leaderboard titles to lowercase ("leaderboard", "closed leaderboard", "weekly leaderboard")
+  - .lb add command remains admin-only
 - Added .setroles command for configurable role-based permissions (admin, owner, moderator, staff)
 - Fixed .setstaffroles database initialization with proper column migration
 - Added new database columns for role type management (admin_role_ids, owner_role_ids, moderator_role_ids)
@@ -78,8 +87,8 @@ Preferred communication style: Simple, everyday language.
   - Primary: Blurred Discord banner if available
   - Fallback: Blurred avatar image
 - **Avatar Overlay**: Circular masked avatar (250x250) positioned on left side
-- **Username Display**: Centered, 48px bold font, positioned at y=120 for better layout
-- **Join Date Badge**: Staff role assignment date displayed in bottom-right with rounded rectangle background
+- **Username Display**: Centered, 60px bold font, positioned at y=120 for optimal visibility
+- **Join Date Badge**: Discord timestamp of staff role assignment displayed in bottom-right with rounded rectangle background
 - **Async Image Fetching**: Uses aiohttp for non-blocking image downloads
 
 ## Permission Structure
@@ -91,7 +100,9 @@ Preferred communication style: Simple, everyday language.
 
 ## Transcript System
 - **Archive Channel**: Dedicated channel for permanent transcript storage
-- **Embed Format**: f9e6f0 color throughout, includes opener, handler, closer, timestamps, duration, and close reason
+- **File Format**: HTML files with Discord-themed styling (dark mode colors, message cards)
+- **Filename**: Simplified to "ticket #X.html" format
+- **Embed Format**: f9e6f0 color with compact layout showing opened by/closed by/handled by on one line, Discord timestamps for dates, and close reason
 - **Dual Delivery**: Posted to archive channel and DM'd to ticket opener with button link back to thread
 - **Confirmation Prompts**: Two-step confirmation process for ticket closure
 
