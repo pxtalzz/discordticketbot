@@ -63,7 +63,7 @@ class TicketCategorySelect(Select):
             discord.SelectOption(label="Giveaway", value="giveaway", emoji="<a:white_butterflies:1390909884928884886>"),
             discord.SelectOption(label="Other", value="other", emoji="<a:white_butterflies:1390909884928884886>")
         ]
-        super().__init__(placeholder="Select a ticket category...", options=options, min_values=1, max_values=1)
+        super().__init__(placeholder="Select a ticket category...", options=options, min_values=1, max_values=1, custom_id="ticket_category_select")
     
     async def callback(self, interaction: discord.Interaction):
         category = self.values[0]
@@ -137,6 +137,7 @@ class ConfirmView(View):
 @bot.event
 async def on_ready():
     await db.init_db()
+    bot.add_view(TicketView())
     print(f'Bot is ready! Logged in as {bot.user}')
     if not weekly_reset_task.is_running():
         weekly_reset_task.start()
@@ -457,6 +458,7 @@ async def rename(ctx, *, name: str):
     if not await has_staff_permission(ctx.author, ctx.guild.id):
         return
     
+    print(f"[DEBUG] Rename command called by {ctx.author} to '{name}'")
     await ctx.channel.edit(name=name)
 
 @bot.command()
@@ -475,6 +477,7 @@ async def profile(ctx, action: str = "", *, message: str = ""):
 
 @bot.command()
 async def stats(ctx, member: discord.Member = None):
+    print(f"[DEBUG] Stats command called by {ctx.author} for {member}")
     if member is None:
         member = ctx.author
     
@@ -537,6 +540,7 @@ async def stats(ctx, member: discord.Member = None):
 
 @bot.command()
 async def lb(ctx, subcommand: str = "", member: discord.Member = None, role: str = ""):
+    print(f"[DEBUG] LB command called by {ctx.author} with subcommand '{subcommand}'")
     if subcommand == "add":
         if not any(r.name.lower() in ['admin', 'mod', 'moderator'] for r in ctx.author.roles):
             return
@@ -613,9 +617,9 @@ async def show_leaderboard(ctx, timeframe: str, stat_type: str):
         user_roles[role].sort(key=lambda x: x[3], reverse=True)
     
     if stat_type == 'closed':
-        title = "closed leaderboard 𐙚 ‧₊˚ ⋅"
+        title = "𝐂𝐋𝐎𝐒𝐄𝐃 𝐋𝐄𝐀𝐃𝐄𝐑𝐁𝐎𝐀𝐑𝐃 𐙚 ‧₊˚ ⋅"
     else:
-        title = "leaderboard 𐙚 ‧₊˚ ⋅"
+        title = "𝐋𝐄𝐀𝐃𝐄𝐑𝐁𝐎𝐀𝐑𝐃 𐙚 ‧₊˚ ⋅"
     
     description = ""
     for role in ROLE_ORDER:
@@ -704,7 +708,7 @@ async def build_leaderboard_embed(timeframe: str, stat_type: str):
     for role in user_roles:
         user_roles[role].sort(key=lambda x: x[3], reverse=True)
     
-    title = "leaderboard 𐙚 ‧₊˚ ⋅" if timeframe == "all_time" else "weekly leaderboard 𐙚 ‧₊˚ ⋅"
+    title = "𝐋𝐄𝐀𝐃𝐄𝐑𝐁𝐎𝐀𝐑𝐃 𐙚 ‧₊˚ ⋅" if timeframe == "all_time" else "𝐖𝐄𝐄𝐊𝐋𝐘 𝐋𝐄𝐀𝐃𝐄𝐑𝐁𝐎𝐀𝐑𝐃 𐙚 ‧₊˚ ⋅"
     
     description = ""
     for role in ROLE_ORDER:
