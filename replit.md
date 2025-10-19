@@ -6,11 +6,14 @@ This is a Discord ticket management and staff statistics bot built with discord.
 
 # Recent Changes
 
-**October 19, 2025** (Latest Update - Bug Fixes & UI Improvements)
+**October 19, 2025** (Latest Update - Bug Fixes & UI Improvements v2)
+- Fixed "interaction failed" error for ticket creation by adding persistent view registration with custom_id
+- Sized up leaderboard titles significantly using Unicode bold characters (𝐋𝐄𝐀𝐃𝐄𝐑𝐁𝐎𝐀𝐑𝐃)
+- Added debug logging to diagnose potential double message issue in .rename, .stats, and .lb commands
+- Configured Reserved VM deployment for always-on bot operation
 - Fixed .stats command to no longer delete user's command message
 - Fixed double messages bug in .stats and .lb commands by removing redundant bot.fetch_user() calls
 - Made leaderboard names clickable by using <@{user_id}> format instead of @{user.name}
-- Sized up leaderboard title text by moving from description to embed.title field
 - Updated ticket close confirmation embed: "Ticket Confirmation" title with "Credit given:" field
 - Updated ticket close final embed: "ticket closed <a:Heart:1396388971818520576>" title with proper formatting
 - Verified bot runs successfully as "kirei#2389"
