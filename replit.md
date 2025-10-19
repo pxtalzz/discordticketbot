@@ -6,7 +6,16 @@ This is a Discord ticket management and staff statistics bot built with discord.
 
 # Recent Changes
 
-**October 17, 2025** (Latest Update - Bug Fixes & Improvements)
+**October 19, 2025** (Latest Update - Bug Fixes & UI Improvements)
+- Fixed .stats command to no longer delete user's command message
+- Fixed double messages bug in .stats and .lb commands by removing redundant bot.fetch_user() calls
+- Made leaderboard names clickable by using <@{user_id}> format instead of @{user.name}
+- Sized up leaderboard title text by moving from description to embed.title field
+- Updated ticket close confirmation embed: "Ticket Confirmation" title with "Credit given:" field
+- Updated ticket close final embed: "ticket closed <a:Heart:1396388971818520576>" title with proper formatting
+- Verified bot runs successfully as "kirei#2389"
+
+**October 17, 2025** (Previous Update - Bug Fixes & Improvements)
 - Fixed .stats command to ensure only one message is sent (now deletes command message after sending stats)
 - Updated leaderboard role labels to: owner, co-owner, head admin, admin, staff, trial staff
 - Enhanced close command confirmation:
