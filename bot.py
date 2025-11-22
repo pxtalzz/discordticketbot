@@ -617,9 +617,9 @@ async def show_leaderboard(ctx, timeframe: str, stat_type: str):
         user_roles[role].sort(key=lambda x: x[3], reverse=True)
     
     if stat_type == 'closed':
-        title = "𝐂𝐋𝐎𝐒𝐄𝐃 𝐋𝐄𝐀𝐃𝐄𝐑𝐁𝐎𝐀𝐑𝐃 𐙚 ‧₊˚ ⋅"
+        title = "closed leaderboard 𐙚 ‧₊˚ ⋅"
     else:
-        title = "𝐋𝐄𝐀𝐃𝐄𝐑𝐁𝐎𝐀𝐑𝐃 𐙚 ‧₊˚ ⋅"
+        title = "leaderboard 𐙚 ‧₊˚ ⋅"
     
     description = ""
     for role in ROLE_ORDER:
