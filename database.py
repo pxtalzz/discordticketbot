@@ -1,6 +1,6 @@
 import sqlite3
 import aiosqlite
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List, Dict, Tuple
 
 class Database:
@@ -109,7 +109,7 @@ class Database:
             cursor = await db.execute('''
                 INSERT INTO tickets (channel_id, category, opener_id, created_at, status)
                 VALUES (?, ?, ?, ?, 'open')
-            ''', (channel_id, category, opener_id, datetime.utcnow().isoformat()))
+            ''', (channel_id, category, opener_id, datetime.now(timezone.utc).isoformat()))
             await db.commit()
             return cursor.lastrowid
     
@@ -159,7 +159,7 @@ class Database:
                     closed_at = ?,
                     status = 'closed'
                 WHERE channel_id = ?
-            ''', (closer_id, reason, datetime.utcnow().isoformat(), channel_id))
+            ''', (closer_id, reason, datetime.now(timezone.utc).isoformat(), channel_id))
             await db.commit()
             
             await db.execute('''
@@ -292,7 +292,7 @@ class Database:
             await db.execute('''
                 INSERT OR REPLACE INTO weekly_reset (id, last_reset)
                 VALUES (1, ?)
-            ''', (datetime.utcnow().isoformat(),))
+            ''', (datetime.now(timezone.utc).isoformat(),))
             await db.commit()
     
     async def set_archive_channel(self, guild_id: int, channel_id: int):
