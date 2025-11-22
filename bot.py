@@ -289,7 +289,14 @@ async def unclaim(ctx, force: str = ""):
             return
     
     await db.unclaim_ticket(ctx.channel.id)
-    await ctx.send("Ticket has been unclaimed!")
+    
+    embed = discord.Embed(
+        description=f"{ctx.author.mention} has unclaimed this ticket",
+        color=0xc5bdff
+    )
+    
+    await ctx.send(embed=embed)
+    await ctx.message.delete()
 
 @bot.command()
 async def close(ctx, *, reason: str = "No reason provided"):

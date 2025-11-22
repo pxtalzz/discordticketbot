@@ -10,6 +10,7 @@ This is a Discord ticket management and staff statistics bot built with discord.
 - Added automatic tracking of staff role assignment dates via on_member_update event listener
 - Stats command join date now shows when user received staff role (ID: 1407881544202195004)
 - Added database function to store role assignment timestamps in ISO-8601 UTC format
+- Updated unclaim command to show embed message with color #c5bdff and delete command message
 - Fixed all deprecated datetime.utcnow() calls to use datetime.now(timezone.utc) in database.py
 - Reorganized project structure by moving files from nested directory to root
 - Verified all Python dependencies are properly installed (discord.py, aiohttp, aiosqlite, pillow, python-dotenv, pytz)
