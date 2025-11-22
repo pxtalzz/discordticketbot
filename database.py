@@ -229,6 +229,15 @@ class Database:
             ''', (user_id, message, message))
             await db.commit()
     
+    async def update_role_assignment_date(self, user_id: int, date: str):
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute('''
+                INSERT INTO user_stats (user_id, role_assignment_date)
+                VALUES (?, ?)
+                ON CONFLICT(user_id) DO UPDATE SET role_assignment_date = ?
+            ''', (user_id, date, date))
+            await db.commit()
+    
     async def modify_stats(self, user_id: int, stat_type: str, value: int):
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute(f'''

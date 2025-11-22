@@ -144,6 +144,19 @@ async def on_ready():
     if not sunday_leaderboard.is_running():
         sunday_leaderboard.start()
 
+@bot.event
+async def on_member_update(before: discord.Member, after: discord.Member):
+    staff_role_id = PING_ROLE_ID
+    
+    before_has_role = any(role.id == staff_role_id for role in before.roles)
+    after_has_role = any(role.id == staff_role_id for role in after.roles)
+    
+    if not before_has_role and after_has_role:
+        from datetime import datetime, timezone
+        timestamp = datetime.now(timezone.utc).isoformat()
+        await db.update_role_assignment_date(after.id, timestamp)
+        print(f"[DEBUG] Updated role assignment date for {after.name} (ID: {after.id})")
+
 @bot.command()
 async def sendticket(ctx):
     if ctx.author.id != ctx.guild.owner_id:
