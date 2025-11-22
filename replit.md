@@ -6,7 +6,14 @@ This is a Discord ticket management and staff statistics bot built with discord.
 
 # Recent Changes
 
-**October 19, 2025** (Latest Update - Bug Fixes & UI Improvements v2)
+**November 22, 2025** (Latest Update - Code Fixes & Modernization)
+- Fixed all deprecated datetime.utcnow() calls to use datetime.now(timezone.utc) in database.py
+- Reorganized project structure by moving files from nested directory to root
+- Verified all Python dependencies are properly installed (discord.py, aiohttp, aiosqlite, pillow, python-dotenv, pytz)
+- Confirmed bot runs successfully and connects to Discord as "kirei#2270"
+- All code modernized to follow Python 3.11+ best practices
+
+**October 19, 2025** (Previous Update - Bug Fixes & UI Improvements v2)
 - Fixed "interaction failed" error for ticket creation by adding persistent view registration with custom_id
 - Sized up leaderboard titles significantly using Unicode bold characters (𝐋𝐄𝐀𝐃𝐄𝐑𝐁𝐎𝐀𝐑𝐃)
 - Added debug logging to diagnose potential double message issue in .rename, .stats, and .lb commands
