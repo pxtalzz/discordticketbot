@@ -712,7 +712,11 @@ async def resetweekly(ctx):
         return
     
     await db.reset_weekly_stats()
-    await ctx.send("Weekly stats have been reset!", delete_after=5)
+    embed = discord.Embed(
+        description="weekly successfully reseted!",
+        color=EMBED_COLOR
+    )
+    await ctx.send(embed=embed, delete_after=5)
 
 @tasks.loop(hours=1)
 async def weekly_reset_task():
