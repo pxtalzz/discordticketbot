@@ -409,13 +409,23 @@ async def close(ctx, *, reason: str = "No reason provided"):
         archive_channel = bot.get_channel(archive_channel_id)
         if archive_channel:
             embed_description = f"""Ticket #{ticket_info['ticket_number']}
-opened by       closed by         handled by
-{opener.mention}                   {closer.mention}                {handler.mention if handler else 'None'}
-opened at
+
+**opened by**
+{opener.mention}
+
+**closed by**
+{closer.mention}
+
+**handled by**
+{handler.mention if handler else 'None'}
+
+**opened at**
 <t:{created_timestamp}:F>
-closed at
+
+**closed at**
 <t:{closed_timestamp}:F>
-reason
+
+**reason**
 {reason}"""
             
             transcript_embed = discord.Embed(
@@ -432,13 +442,23 @@ reason
     
     try:
         dm_description = f"""Ticket #{ticket_info['ticket_number']}
-opened by       <:whitedash:1390902298166820996>        closed by       <:whitedash:1390902298166820996>          handled by
-{opener.mention}                                      {closer.mention}                               {handler.mention if handler else 'None'}
-opened at
+
+**opened by**
+{opener.mention}
+
+**closed by**
+{closer.mention}
+
+**handled by**
+{handler.mention if handler else 'None'}
+
+**opened at**
 <t:{created_timestamp}:F>
-closed at
+
+**closed at**
 <t:{closed_timestamp}:F>
-reason
+
+**reason**
 {reason}"""
         
         dm_embed = discord.Embed(
