@@ -775,16 +775,14 @@ async def sunday_leaderboard():
             if lb_channel_id:
                 channel = bot.get_channel(lb_channel_id)
                 if channel:
-                    all_time_data = await build_leaderboard_embed("all_time", "handled")
-                    weekly_data = await build_leaderboard_embed("weekly", "handled")
+                    handled_data = await build_leaderboard_embed("handled")
+                    closed_data = await build_leaderboard_embed("closed")
                     
-                    await channel.send(embed=all_time_data)
-                    await channel.send(embed=weekly_data)
+                    await channel.send(embed=handled_data)
+                    await channel.send(embed=closed_data)
 
-async def build_leaderboard_embed(timeframe: str, stat_type: str):
-    leaderboard_data = await db.get_leaderboard_data(
-        'weekly' if timeframe == 'weekly' else 'all_time'
-    )
+async def build_leaderboard_embed(stat_type: str):
+    leaderboard_data = await db.get_leaderboard_data('all_time')
     
     user_roles = {}
     for user_id, all_handled, all_closed, week_handled, week_closed in leaderboard_data:
@@ -793,17 +791,20 @@ async def build_leaderboard_embed(timeframe: str, stat_type: str):
             if lb_role not in user_roles:
                 user_roles[lb_role] = []
             
-            if timeframe == 'weekly':
-                total = week_handled + week_closed
-                user_roles[lb_role].append((user_id, all_handled + all_closed, week_handled + week_closed, total))
-            else:
-                total = all_handled + all_closed
-                user_roles[lb_role].append((user_id, total, week_handled + week_closed, total))
+            if stat_type == 'handled':
+                all_time_stat = all_handled
+                weekly_stat = week_handled
+            else:  # closed
+                all_time_stat = all_closed
+                weekly_stat = week_closed
+            
+            user_roles[lb_role].append((user_id, all_time_stat, weekly_stat))
     
     for role in user_roles:
-        user_roles[role].sort(key=lambda x: x[3], reverse=True)
+        user_roles[role].sort(key=lambda x: x[1] + x[2], reverse=True)
     
-    title = "𝐋𝐄𝐀𝐃𝐄𝐑𝐁𝐎𝐀𝐑𝐃 𐙚 ‧₊˚ ⋅" if timeframe == "all_time" else "𝐖𝐄𝐄𝐊𝐋𝐘 𝐋𝐄𝐀𝐃𝐄𝐑𝐁𝐎𝐀𝐑𝐃 𐙚 ‧₊˚ ⋅"
+    stat_label = "Handled" if stat_type == 'handled' else "Closed"
+    title = f"𝐋𝐄𝐀𝐃𝐄𝐑𝐁𝐎𝐀𝐑𝐃 – {stat_label} 𐙚 ‧₊˚ ⋅"
     
     description = ""
     for role in ROLE_ORDER:
@@ -811,7 +812,7 @@ async def build_leaderboard_embed(timeframe: str, stat_type: str):
             emoji = ROLE_EMOJIS.get(role, "")
             description += f"\n{emoji} {role}\n"
             
-            for user_id, all_time_stat, weekly_stat, _ in user_roles[role]:
+            for user_id, all_time_stat, weekly_stat in user_roles[role]:
                 description += f"<@{user_id}> **{all_time_stat}** all - **{weekly_stat}** 7d\n"
     
     if not description:
@@ -841,11 +842,11 @@ async def testleaderboard(ctx):
         await ctx.send("Leaderboard channel not found!", delete_after=5)
         return
     
-    all_time_data = await build_leaderboard_embed("all_time", "handled")
-    weekly_data = await build_leaderboard_embed("weekly", "handled")
+    handled_data = await build_leaderboard_embed("handled")
+    closed_data = await build_leaderboard_embed("closed")
     
-    await channel.send(embed=all_time_data)
-    await channel.send(embed=weekly_data)
+    await channel.send(embed=handled_data)
+    await channel.send(embed=closed_data)
     
     await ctx.send("Leaderboard posted to your leaderboard channel!", delete_after=5)
 
