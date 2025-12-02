@@ -769,7 +769,7 @@ async def sunday_leaderboard():
     est = pytz.timezone('US/Eastern')
     now = datetime.now(est)
     
-    if now.weekday() == 6 and now.hour == 4:
+    if now.weekday() == 6 and now.hour == 5:
         for guild in bot.guilds:
             lb_channel_id = await db.get_leaderboard_channel(guild.id)
             if lb_channel_id:
