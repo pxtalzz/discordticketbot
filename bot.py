@@ -706,6 +706,14 @@ async def modify(ctx, member: discord.Member, stat: str, value: int):
     await db.modify_stats(member.id, stat_map[stat.lower()], value)
     await ctx.send(f"Modified {member.mention}'s {stat} by {value}!")
 
+@bot.command()
+async def resetweekly(ctx):
+    if not any(role.name.lower() in ['admin', 'mod', 'moderator'] for role in ctx.author.roles):
+        return
+    
+    await db.reset_weekly_stats()
+    await ctx.send("Weekly stats have been reset!", delete_after=5)
+
 @tasks.loop(hours=1)
 async def weekly_reset_task():
     est = pytz.timezone('US/Eastern')
