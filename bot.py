@@ -581,7 +581,20 @@ async def stats(ctx, member: discord.Member = None):
     embed.add_field(name="Closed Total", value=str(closed_total), inline=True)
     embed.add_field(name="Closed 7d", value=str(closed_7d), inline=True)
     
-    embed.add_field(name="Join Date", value=join_date if join_date else "N/A", inline=True)
+    staff_join_date = "N/A"
+    ping_role = ctx.guild.get_role(PING_ROLE_ID)
+    if ping_role and ping_role in member.roles:
+        role_assignment_date = stats.get('role_assignment_date')
+        if role_assignment_date and role_assignment_date != 'N/A':
+            try:
+                from datetime import datetime
+                dt = datetime.fromisoformat(role_assignment_date)
+                timestamp_int = int(dt.timestamp())
+                staff_join_date = f"<t:{timestamp_int}:D>"
+            except:
+                staff_join_date = role_assignment_date
+    
+    embed.add_field(name="Join Date", value=staff_join_date, inline=True)
     embed.add_field(name="Handled Total", value=str(handled_total), inline=True)
     embed.add_field(name="Handled 7d", value=str(handled_7d), inline=True)
     
