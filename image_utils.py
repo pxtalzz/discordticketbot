@@ -190,8 +190,9 @@ async def create_stats_image(
         text_y = badge_y_pos + (nitro_size - text_h) // 2
         draw.text((text_x, text_y), "N", fill=(255, 255, 255), font=font_small)
     
+    img_rgba = img.convert('RGBA')
     border_img = Image.new('RGBA', (width + 20, height + 20), (255, 255, 255, 80))
-    border_img.paste(img, (10, 10), img)
+    border_img.paste(img_rgba, (10, 10))
     
     output = io.BytesIO()
     border_img.save(output, format='PNG')
