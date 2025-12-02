@@ -82,6 +82,7 @@ async def create_stats_image(
                 
                 img.paste(avatar, (30, 26), mask)
     
+    img = img.convert('RGBA')
     draw = ImageDraw.Draw(img)
     
     try:
@@ -154,16 +155,12 @@ async def create_stats_image(
                     async with session.get(badge_url) as resp:
                         if resp.status == 200:
                             badge_data = await resp.read()
-                            badge_img = Image.open(io.BytesIO(badge_data))
+                            badge_img = Image.open(io.BytesIO(badge_data)).convert('RGBA')
                             badge_img = badge_img.resize((45, 45), Image.Resampling.LANCZOS)
-                            
-                            if badge_img.mode == 'RGBA':
-                                img.paste(badge_img, (width - 55, badge_y), badge_img)
-                            else:
-                                img.paste(badge_img, (width - 55, badge_y))
+                            img.paste(badge_img, (width - 55, badge_y), badge_img)
                             badge_x -= 60
-            except:
-                pass
+            except Exception as e:
+                print(f"Error loading hypesquad badge: {e}")
     
     if has_nitro:
         nitro_size = 35
