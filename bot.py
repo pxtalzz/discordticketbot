@@ -409,22 +409,16 @@ async def close(ctx, *, reason: str = "No reason provided"):
         archive_channel = bot.get_channel(archive_channel_id)
         if archive_channel:
             embed_description = f"""Ticket #{ticket_info['ticket_number']}
-
 **opened by**
 {opener.mention}
-
 **closed by**
 {closer.mention}
-
 **handled by**
 {handler.mention if handler else 'None'}
-
 **opened at**
 <t:{created_timestamp}:F>
-
 **closed at**
 <t:{closed_timestamp}:F>
-
 **reason**
 {reason}"""
             
@@ -442,22 +436,16 @@ async def close(ctx, *, reason: str = "No reason provided"):
     
     try:
         dm_description = f"""Ticket #{ticket_info['ticket_number']}
-
 **opened by**
 {opener.mention}
-
 **closed by**
 {closer.mention}
-
 **handled by**
 {handler.mention if handler else 'None'}
-
 **opened at**
 <t:{created_timestamp}:F>
-
 **closed at**
 <t:{closed_timestamp}:F>
-
 **reason**
 {reason}"""
         
