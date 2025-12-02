@@ -144,7 +144,7 @@ async def create_stats_image(
         draw.rounded_rectangle(
             ((circle_x, circle_y), (circle_x + circle_width, circle_y + circle_height)),
             radius=20,
-            fill=(40, 40, 40, 200)
+            fill=(0, 0, 0, 150)
         )
         
         text_x = circle_x + padding
