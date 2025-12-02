@@ -565,7 +565,16 @@ async def stats(ctx, member: discord.Member = None):
     
     has_nitro = member.premium_since is not None
     
-    image_data = await create_stats_image(member, banner_url, avatar_url, member.name, join_date, has_nitro)
+    hypesquad_type = None
+    if member.public_flags:
+        if member.public_flags.value & (1 << 8):
+            hypesquad_type = "Balance"
+        elif member.public_flags.value & (1 << 7):
+            hypesquad_type = "Brilliance"
+        elif member.public_flags.value & (1 << 6):
+            hypesquad_type = "Bravery"
+    
+    image_data = await create_stats_image(member, banner_url, avatar_url, member.name, join_date, has_nitro, hypesquad_type)
     
     embed = discord.Embed(
         title=f"{member.name}",

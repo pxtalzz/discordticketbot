@@ -9,7 +9,8 @@ async def create_stats_image(
     avatar_url: str,
     username: str,
     join_date: Optional[str],
-    has_nitro: bool = False
+    has_nitro: bool = False,
+    hypesquad_type: Optional[str] = None
 ) -> io.BytesIO:
     width = 885
     height = 303
@@ -139,6 +140,26 @@ async def create_stats_image(
     badge_y = 15
     badge_x = width - 20
     
+    if hypesquad_type:
+        hypesquad_urls = {
+            'balance': 'https://static.wikia.nocookie.net/zarena/images/0/07/Discord_balance.png',
+            'brilliance': 'https://static.wikia.nocookie.net/zarena/images/8/81/Discord_brilliance.png',
+            'bravery': 'https://static.wikia.nocookie.net/zarena/images/1/1a/Discord_bravery.png'
+        }
+        
+        badge_url = hypesquad_urls.get(hypesquad_type.lower())
+        if badge_url:
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(badge_url) as resp:
+                        if resp.status == 200:
+                            badge_data = await resp.read()
+                            badge_img = Image.open(io.BytesIO(badge_data)).convert('RGBA')
+                            badge_img = badge_img.resize((45, 45), Image.Resampling.LANCZOS)
+                            img.paste(badge_img, (width - 55, badge_y), badge_img)
+                            badge_x -= 60
+            except Exception as e:
+                print(f"[DEBUG] Error loading hypesquad badge: {e}")
     
     if has_nitro:
         nitro_size = 35
