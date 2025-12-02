@@ -113,6 +113,14 @@ class Database:
                 result = await cursor.fetchone()
                 return result[0] if result else 0
     
+    async def get_closed_ticket_count(self) -> int:
+        async with aiosqlite.connect(self.db_path) as db:
+            async with db.execute(
+                "SELECT COUNT(*) FROM tickets WHERE status = 'closed'"
+            ) as cursor:
+                result = await cursor.fetchone()
+                return result[0] if result else 0
+    
     async def create_ticket(self, channel_id: int, category: str, opener_id: int) -> int:
         async with aiosqlite.connect(self.db_path) as db:
             cursor = await db.execute('''

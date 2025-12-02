@@ -23,10 +23,10 @@ EMBED_COLOR = 0xf9e6f0
 
 @tasks.loop(minutes=1)
 async def update_ticket_status():
-    ticket_count = await db.get_open_ticket_count()
+    ticket_count = await db.get_closed_ticket_count()
     activity = discord.Activity(
         type=discord.ActivityType.watching,
-        name=f"over {ticket_count} tickets ♡"
+        name=f"watching over {ticket_count} tickets ♡"
     )
     await bot.change_presence(activity=activity)
 
