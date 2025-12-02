@@ -228,6 +228,15 @@ async def setleaderboard(ctx, channel: discord.TextChannel):
     await ctx.send(f"Leaderboard channel set to {channel.mention}!", delete_after=5)
 
 @bot.command()
+async def ping(ctx):
+    latency_ms = round(bot.latency * 1000)
+    embed = discord.Embed(
+        description=f"pong! {latency_ms}ms",
+        color=EMBED_COLOR
+    )
+    await ctx.send(embed=embed)
+
+@bot.command()
 async def setstaffroles(ctx, *roles: discord.Role):
     if ctx.author.id != ctx.guild.owner_id:
         await ctx.send("Only the server owner can use this command!", delete_after=5)
