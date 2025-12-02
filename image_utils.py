@@ -102,6 +102,14 @@ async def create_stats_image(
     
     text_x = max(center_x, min_text_x_for_left)
     
+    # Draw shadow for username
+    shadow_offset = 3
+    shadow_color = (0, 0, 0, 180)
+    for offset_x in range(-shadow_offset, shadow_offset + 1):
+        for offset_y in range(-shadow_offset, shadow_offset + 1):
+            if offset_x != 0 or offset_y != 0:
+                draw.text((int(text_x) + offset_x, 120 + offset_y), username, fill=shadow_color, font=font_large, anchor="mt")
+    
     draw.text((int(text_x), 120), username, fill=(255, 255, 255), font=font_large, anchor="mt")
     
     if join_date and join_date != 'N/A':
