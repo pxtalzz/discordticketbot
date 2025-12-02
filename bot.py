@@ -156,7 +156,6 @@ class ConfirmView(View):
 async def on_ready():
     await db.init_db()
     bot.add_view(TicketView())
-    await bot.change_presence(activity=discord.Game(name="kaori's ticket system"))
     print(f'Bot is ready! Logged in as {bot.user}')
     if not weekly_reset_task.is_running():
         weekly_reset_task.start()
@@ -293,28 +292,29 @@ async def claim(ctx, force: str = ""):
 async def unclaim(ctx, force: str = ""):
     if not isinstance(ctx.channel, discord.Thread):
         return
-    
+
     ticket_info = await db.get_ticket_info(ctx.channel.id)
     if not ticket_info:
         return
-    
+
     if force == "force":
         if not any(role.name.lower() in ['admin', 'mod', 'moderator'] for role in ctx.author.roles):
             return
+
+        if ticket_info['handler_id']:
+            await db.unclaim_ticket(ctx.channel.id)
     else:
         if not await has_staff_permission(ctx.author, ctx.guild.id):
             return
-        if ticket_info['handler_id'] != ctx.author.id:
-            return
-    
-    await db.unclaim_ticket(ctx.channel.id)
-    
+
+    await db.unclaim_ticket(ctx.channel.id, ctx.author.id)
+
     embed = discord.Embed(
-        description=f"{ctx.author.mention} has unclaimed this ticket",
-        color=0xc5bdff
+        description=f"{ctx.author.mention} has unclaimed the ticket",
+        color=EMBED_COLOR
     )
-    
-    await ctx.send(embed=embed)
+
+    msg = await ctx.send(embed=embed, reference=ctx.message)
     await ctx.message.delete()
 
 @bot.command()
