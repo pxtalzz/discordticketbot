@@ -87,6 +87,7 @@ class TicketCategorySelect(Select):
         category = self.values[0]
         
         user_open_tickets = await db.get_user_open_ticket_count(interaction.user.id)
+        print(f"[DEBUG] User {interaction.user.id} open tickets: {user_open_tickets}")
         if user_open_tickets > 0:
             await interaction.response.send_message(
                 "you currently have a ticket open! >_<",
