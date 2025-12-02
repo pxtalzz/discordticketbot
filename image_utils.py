@@ -141,11 +141,15 @@ async def create_stats_image(
         circle_width = text_width + padding * 2
         circle_height = text_height + padding * 2
         
-        draw.rounded_rectangle(
+        # Create transparent background layer for date
+        bg_layer = Image.new('RGBA', (width, height), (0, 0, 0, 0))
+        bg_draw = ImageDraw.Draw(bg_layer)
+        bg_draw.rounded_rectangle(
             ((circle_x, circle_y), (circle_x + circle_width, circle_y + circle_height)),
             radius=20,
             fill=(0, 0, 0, 25)
         )
+        img.paste(bg_layer, (0, 0), bg_layer)
         
         text_x = circle_x + padding
         text_y = circle_y + padding
