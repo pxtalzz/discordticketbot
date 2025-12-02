@@ -546,7 +546,7 @@ async def stats(ctx, member: discord.Member = None):
     stats = await db.get_user_stats(member.id)
     
     banner_url = None
-    if member.premium_since and member.banner:
+    if (member.premium_since or member.bot) and member.banner:
         banner_url = member.banner.url
     
     avatar_url = member.display_avatar.url
