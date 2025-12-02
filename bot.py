@@ -86,6 +86,14 @@ class TicketCategorySelect(Select):
     async def callback(self, interaction: discord.Interaction):
         category = self.values[0]
         
+        user_open_tickets = await db.get_user_open_ticket_count(interaction.user.id)
+        if user_open_tickets > 0:
+            await interaction.response.send_message(
+                "you currently have a ticket open! >_<",
+                ephemeral=True
+            )
+            return
+        
         ticket_limit = await db.get_ticket_limit(interaction.guild.id)
         open_tickets = await db.get_open_ticket_count()
         
