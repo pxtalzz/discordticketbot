@@ -645,16 +645,18 @@ async def show_leaderboard(ctx, timeframe: str, stat_type: str):
             if timeframe == 'weekly':
                 if stat_type == 'closed':
                     total = week_closed
+                    weekly_stat = week_closed
                 else:
-                    total = week_handled + week_closed
-                weekly_stat = week_closed if stat_type == 'closed' else week_handled + week_closed
-                user_roles[lb_role].append((user_id, all_handled + all_closed if stat_type != 'closed' else all_closed, weekly_stat, total))
+                    total = week_handled
+                    weekly_stat = week_handled
+                user_roles[lb_role].append((user_id, all_handled, weekly_stat, total))
             else:
                 if stat_type == 'closed':
                     total = all_closed
+                    weekly_stat = week_closed
                 else:
-                    total = all_handled + all_closed
-                weekly_stat = week_closed if stat_type == 'closed' else week_handled + week_closed
+                    total = all_handled
+                    weekly_stat = week_handled
                 user_roles[lb_role].append((user_id, total, weekly_stat, total))
     
     for role in user_roles:
