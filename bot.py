@@ -708,10 +708,18 @@ async def modify(ctx, member: discord.Member, stat: str, value: int):
 
 @bot.command()
 async def resetweekly(ctx):
+    print(f"[DEBUG] resetweekly called by {ctx.author}")
+    print(f"[DEBUG] User roles: {[role.name for role in ctx.author.roles]}")
+    
     if not any(role.name.lower() in ['admin', 'mod', 'moderator'] for role in ctx.author.roles):
+        print(f"[DEBUG] User {ctx.author} doesn't have admin/mod/moderator role")
+        await ctx.send("You don't have permission to use this command!", ephemeral=True)
         return
     
+    print(f"[DEBUG] Resetting weekly stats...")
     await db.reset_weekly_stats()
+    print(f"[DEBUG] Weekly stats reset complete")
+    
     embed = discord.Embed(
         description="weekly successfully reseted!",
         color=EMBED_COLOR
