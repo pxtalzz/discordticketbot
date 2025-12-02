@@ -9,6 +9,8 @@ async def create_stats_image(
     avatar_url: str,
     username: str,
     join_date: Optional[str],
+    has_nitro: bool = False,
+    hypesquad_type: Optional[str] = None,
     badges: list = []
 ) -> io.BytesIO:
     width = 885
@@ -134,6 +136,59 @@ async def create_stats_image(
         text_x = circle_x + padding
         text_y = circle_y + padding
         draw.text((text_x, text_y), join_text, fill=(255, 255, 255), font=font_small)
+    
+    badge_y = 15
+    badge_x = width - 20
+    
+    if hypesquad_type:
+        hypesquad_colors = {
+            'brilliance': (83, 109, 254),
+            'balance': (249, 166, 55),
+            'bravery': (236, 68, 99)
+        }
+        hypesquad_labels = {
+            'brilliance': 'BRL',
+            'balance': 'BAL',
+            'bravery': 'BRV'
+        }
+        
+        color = hypesquad_colors.get(hypesquad_type.lower(), (255, 255, 255))
+        label = hypesquad_labels.get(hypesquad_type.lower(), 'HS')
+        
+        badge_size = 35
+        badge_x_pos = width - badge_size - 10
+        badge_y_pos = badge_y
+        
+        draw.ellipse(
+            [(badge_x_pos, badge_y_pos), (badge_x_pos + badge_size, badge_y_pos + badge_size)],
+            fill=color
+        )
+        
+        bbox = draw.textbbox((0, 0), label, font=font_small)
+        text_w = bbox[2] - bbox[0]
+        text_h = bbox[3] - bbox[1]
+        text_x = badge_x_pos + (badge_size - text_w) // 2
+        text_y = badge_y_pos + (badge_size - text_h) // 2
+        draw.text((text_x, text_y), label, fill=(255, 255, 255), font=font_small)
+        
+        badge_x -= 50
+    
+    if has_nitro:
+        nitro_size = 35
+        badge_x_pos = badge_x - nitro_size - 10
+        badge_y_pos = badge_y
+        
+        draw.ellipse(
+            [(badge_x_pos, badge_y_pos), (badge_x_pos + nitro_size, badge_y_pos + nitro_size)],
+            fill=(127, 75, 200)
+        )
+        
+        bbox = draw.textbbox((0, 0), "N", font=font_small)
+        text_w = bbox[2] - bbox[0]
+        text_h = bbox[3] - bbox[1]
+        text_x = badge_x_pos + (nitro_size - text_w) // 2
+        text_y = badge_y_pos + (nitro_size - text_h) // 2
+        draw.text((text_x, text_y), "N", fill=(255, 255, 255), font=font_small)
     
     output = io.BytesIO()
     img.save(output, format='PNG')
