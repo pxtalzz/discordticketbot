@@ -558,20 +558,10 @@ async def stats(ctx, member: discord.Member = None):
             highest_role = STAFF_ROLE_HIERARCHY[role_id]
             break
     
-    ping_role = ctx.guild.get_role(PING_ROLE_ID)
     join_date = None
-    if ping_role and ping_role in member.roles:
-        role_assignment_date = stats.get('role_assignment_date')
-        if role_assignment_date and role_assignment_date != 'N/A':
-            try:
-                from datetime import datetime
-                dt = datetime.fromisoformat(role_assignment_date)
-                timestamp_int = int(dt.timestamp())
-                join_date = f"<t:{timestamp_int}:D>"
-            except:
-                join_date = role_assignment_date
-        else:
-            join_date = "N/A"
+    if member.created_at:
+        timestamp_int = int(member.created_at.timestamp())
+        join_date = f"<t:{timestamp_int}:d>"
     
     image_data = await create_stats_image(member, banner_url, avatar_url, member.name, join_date)
     
