@@ -738,7 +738,8 @@ async def resetweekly(ctx):
 
 @bot.command()
 async def cleartickets(ctx, member: discord.Member = None):
-    if not any(role.name.lower() in ['admin', 'mod', 'moderator'] for role in ctx.author.roles):
+    if not await has_staff_permission(ctx.author, ctx.guild.id):
+        await ctx.send("You don't have permission to use this command!", ephemeral=True)
         return
     
     target = member or ctx.author
@@ -746,7 +747,11 @@ async def cleartickets(ctx, member: discord.Member = None):
         "UPDATE tickets SET status = 'closed' WHERE opener_id = ? AND status = 'open'",
         (target.id,)
     )
-    await ctx.send(f"Cleared open tickets for {target.mention}!", delete_after=5)
+    embed = discord.Embed(
+        description=f"Cleared open tickets for {target.mention}!",
+        color=EMBED_COLOR
+    )
+    await ctx.send(embed=embed, delete_after=5)
 
 @tasks.loop(hours=1)
 async def weekly_reset_task():
