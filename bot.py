@@ -21,6 +21,24 @@ db = Database()
 
 EMBED_COLOR = 0xf9e6f0
 
+# --- NEW: BOT READY EVENT AND ACTIVITY SETUP ---
+@bot.event
+async def on_ready():
+    """
+    Fires when the bot is ready. 
+    Sets the bot's status/activity to "Playing kaori's ticket system".
+    """
+    print(f'Informational Bot is ready. Logged in as {bot.user}')
+
+    # LINE 31: This sets the bot's status to "Playing kaori's ticket system"
+    # To change the status type, modify the discord.Game() function.
+    await bot.change_presence(activity=discord.Game(name="kaori's ticket system"))
+
+    # NOTE: If you have background tasks (like weekly_reset_task), 
+    # they should be started here, e.g., weekly_reset_task.start()
+
+# --- END NEW CODE ---
+
 ROLE_EMOJIS = {
     'owner': '<a:white_butterflies:1390909884928884886>',
     'co-owner': '<:piano_smile:1396035361091752080>',
@@ -138,6 +156,7 @@ class ConfirmView(View):
 async def on_ready():
     await db.init_db()
     bot.add_view(TicketView())
+    await bot.change_presence(activity=discord.Game(name="kaori's ticket system"))
     print(f'Bot is ready! Logged in as {bot.user}')
     if not weekly_reset_task.is_running():
         weekly_reset_task.start()
