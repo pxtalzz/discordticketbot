@@ -142,6 +142,7 @@ async def create_stats_image(
     badge_x = width - 20
     
     if hypesquad_type:
+        print(f"[DEBUG] Hypesquad type detected: {hypesquad_type}")
         hypesquad_urls = {
             'balance': 'https://cdn.discordapp.com/badge-icons/3c6ccb21cb56820e4eaf0aed9d30f7da/hypesquad_balance.png',
             'brilliance': 'https://cdn.discordapp.com/badge-icons/9ef7e029c1da4f9505aff1e67791ee99/hypesquad_brilliance.png',
@@ -149,18 +150,24 @@ async def create_stats_image(
         }
         
         badge_url = hypesquad_urls.get(hypesquad_type.lower())
+        print(f"[DEBUG] Badge URL: {badge_url}")
         if badge_url:
             try:
                 async with aiohttp.ClientSession() as session:
                     async with session.get(badge_url) as resp:
+                        print(f"[DEBUG] Response status: {resp.status}")
                         if resp.status == 200:
                             badge_data = await resp.read()
+                            print(f"[DEBUG] Badge data size: {len(badge_data)}")
                             badge_img = Image.open(io.BytesIO(badge_data)).convert('RGBA')
                             badge_img = badge_img.resize((45, 45), Image.Resampling.LANCZOS)
                             img.paste(badge_img, (width - 55, badge_y), badge_img)
+                            print(f"[DEBUG] Badge pasted successfully")
                             badge_x -= 60
             except Exception as e:
-                print(f"Error loading hypesquad badge: {e}")
+                print(f"[ERROR] Error loading hypesquad badge: {e}")
+                import traceback
+                traceback.print_exc()
     
     if has_nitro:
         nitro_size = 35
