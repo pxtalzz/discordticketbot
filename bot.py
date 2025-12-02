@@ -87,7 +87,6 @@ class TicketCategorySelect(Select):
         category = self.values[0]
         
         user_open_tickets = await db.get_user_open_ticket_count(interaction.user.id)
-        print(f"[DEBUG] User {interaction.user.id} open tickets: {user_open_tickets}")
         if user_open_tickets > 0:
             await interaction.response.send_message(
                 "you currently have a ticket open! >_<",
@@ -736,6 +735,18 @@ async def resetweekly(ctx):
         color=EMBED_COLOR
     )
     await ctx.send(embed=embed, delete_after=5)
+
+@bot.command()
+async def cleartickets(ctx, member: discord.Member = None):
+    if not any(role.name.lower() in ['admin', 'mod', 'moderator'] for role in ctx.author.roles):
+        return
+    
+    target = member or ctx.author
+    await db.execute_raw(
+        "UPDATE tickets SET status = 'closed' WHERE opener_id = ? AND status = 'open'",
+        (target.id,)
+    )
+    await ctx.send(f"Cleared open tickets for {target.mention}!", delete_after=5)
 
 @tasks.loop(hours=1)
 async def weekly_reset_task():
