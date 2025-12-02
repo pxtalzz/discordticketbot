@@ -116,7 +116,7 @@ class TicketCategorySelect(Select):
             description=f"welcome! <:castorice_shy:1439122834692767827>\nthank you for opening a ticket, staff will be here shortly\nplease be patient as you wait\n\nopened by {interaction.user.mention}",
             color=EMBED_COLOR
         )
-        await thread.send("ping staff", embed=embed)
+        await thread.send(f"<@&{PING_ROLE_ID}>", embed=embed)
         
         await interaction.response.send_message(
             f"Ticket created! {thread.mention}",
