@@ -825,4 +825,28 @@ async def build_leaderboard_embed(timeframe: str, stat_type: str):
     
     return embed
 
+@bot.command()
+async def testleaderboard(ctx):
+    if ctx.author.id != ctx.guild.owner_id:
+        await ctx.send("Only the server owner can use this command!", delete_after=5)
+        return
+    
+    lb_channel_id = await db.get_leaderboard_channel(ctx.guild.id)
+    if not lb_channel_id:
+        await ctx.send("Leaderboard channel not set! Use `.setleaderboard #channel`", delete_after=5)
+        return
+    
+    channel = bot.get_channel(lb_channel_id)
+    if not channel:
+        await ctx.send("Leaderboard channel not found!", delete_after=5)
+        return
+    
+    all_time_data = await build_leaderboard_embed("all_time", "handled")
+    weekly_data = await build_leaderboard_embed("weekly", "handled")
+    
+    await channel.send(embed=all_time_data)
+    await channel.send(embed=weekly_data)
+    
+    await ctx.send("Leaderboard posted to your leaderboard channel!", delete_after=5)
+
 bot.run(os.getenv('DISCORD_TOKEN'))
