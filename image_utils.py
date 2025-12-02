@@ -141,37 +141,29 @@ async def create_stats_image(
     badge_x = width - 20
     
     if hypesquad_type:
-        hypesquad_colors = {
-            'brilliance': (83, 109, 254),
-            'balance': (249, 166, 55),
-            'bravery': (236, 68, 99)
-        }
-        hypesquad_labels = {
-            'brilliance': '✦',
-            'balance': '☆',
-            'bravery': '◆'
+        hypesquad_urls = {
+            'balance': 'https://cdn.discordapp.com/badge-icons/3c6ccb21cb56820e4eaf0aed9d30f7da/hypesquad_balance.png',
+            'brilliance': 'https://cdn.discordapp.com/badge-icons/9ef7e029c1da4f9505aff1e67791ee99/hypesquad_brilliance.png',
+            'bravery': 'https://cdn.discordapp.com/badge-icons/8a88d63823ae4500da24bd7d1f4778b0/hypesquad_bravery.png'
         }
         
-        color = hypesquad_colors.get(hypesquad_type.lower(), (255, 255, 255))
-        label = hypesquad_labels.get(hypesquad_type.lower(), '●')
-        
-        badge_size = 40
-        badge_x_pos = width - badge_size - 10
-        badge_y_pos = badge_y
-        
-        draw.ellipse(
-            [(badge_x_pos, badge_y_pos), (badge_x_pos + badge_size, badge_y_pos + badge_size)],
-            fill=color
-        )
-        
-        bbox = draw.textbbox((0, 0), label, font=font_small)
-        text_w = bbox[2] - bbox[0]
-        text_h = bbox[3] - bbox[1]
-        text_x = badge_x_pos + (badge_size - text_w) // 2
-        text_y = badge_y_pos + (badge_size - text_h) // 2
-        draw.text((text_x, text_y), label, fill=(255, 255, 255), font=font_small)
-        
-        badge_x -= 60
+        badge_url = hypesquad_urls.get(hypesquad_type.lower())
+        if badge_url:
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(badge_url) as resp:
+                        if resp.status == 200:
+                            badge_data = await resp.read()
+                            badge_img = Image.open(io.BytesIO(badge_data))
+                            badge_img = badge_img.resize((45, 45), Image.Resampling.LANCZOS)
+                            
+                            if badge_img.mode == 'RGBA':
+                                img.paste(badge_img, (width - 55, badge_y), badge_img)
+                            else:
+                                img.paste(badge_img, (width - 55, badge_y))
+                            badge_x -= 60
+            except:
+                pass
     
     if has_nitro:
         nitro_size = 35
