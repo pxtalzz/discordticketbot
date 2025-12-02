@@ -80,13 +80,13 @@ async def create_stats_image(
                 mask_draw.ellipse((0, 0, 250, 250), fill=255)
                 
                 # Create shadow for avatar circle
-                shadow_size = 270
+                shadow_size = 280
                 shadow_layer = Image.new('RGBA', (shadow_size, shadow_size), (0, 0, 0, 0))
                 shadow_draw = ImageDraw.Draw(shadow_layer)
                 shadow_draw.ellipse((0, 0, shadow_size - 1, shadow_size - 1), fill=(0, 0, 0, 120))
                 shadow_layer = shadow_layer.filter(ImageFilter.GaussianBlur(radius=8))
-                shadow_pos_x = 30 - (shadow_size - 250) // 2
-                shadow_pos_y = 26 - (shadow_size - 250) // 2
+                shadow_pos_x = max(0, 30 - (shadow_size - 250) // 2)
+                shadow_pos_y = max(0, 26 - (shadow_size - 250) // 2)
                 img.paste(shadow_layer, (shadow_pos_x, shadow_pos_y), shadow_layer)
                 
                 img.paste(avatar, (30, 26), mask)
