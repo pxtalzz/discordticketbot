@@ -136,32 +136,9 @@ class Database:
                 UPDATE tickets SET handler_id = ? WHERE channel_id = ?
             ''', (handler_id, channel_id))
             await db.commit()
-            
-            await db.execute('''
-                INSERT INTO user_stats (user_id, all_time_handled, weekly_handled)
-                VALUES (?, 1, 1)
-                ON CONFLICT(user_id) DO UPDATE SET
-                    all_time_handled = all_time_handled + 1,
-                    weekly_handled = weekly_handled + 1
-            ''', (handler_id,))
-            await db.commit()
     
     async def unclaim_ticket(self, channel_id: int):
         async with aiosqlite.connect(self.db_path) as db:
-            async with db.execute(
-                'SELECT handler_id FROM tickets WHERE channel_id = ?',
-                (channel_id,)
-            ) as cursor:
-                result = await cursor.fetchone()
-                if result and result[0]:
-                    handler_id = result[0]
-                    await db.execute('''
-                        UPDATE user_stats SET
-                            all_time_handled = all_time_handled - 1,
-                            weekly_handled = weekly_handled - 1
-                        WHERE user_id = ?
-                    ''', (handler_id,))
-                    
             await db.execute('''
                 UPDATE tickets SET handler_id = NULL WHERE channel_id = ?
             ''', (channel_id,))
@@ -169,6 +146,14 @@ class Database:
     
     async def close_ticket(self, channel_id: int, closer_id: int, reason: str):
         async with aiosqlite.connect(self.db_path) as db:
+            # Get handler_id before closing
+            async with db.execute(
+                'SELECT handler_id FROM tickets WHERE channel_id = ?',
+                (channel_id,)
+            ) as cursor:
+                result = await cursor.fetchone()
+                handler_id = result[0] if result else None
+            
             await db.execute('''
                 UPDATE tickets SET 
                     closer_id = ?,
@@ -179,6 +164,7 @@ class Database:
             ''', (closer_id, reason, datetime.now(timezone.utc).isoformat(), channel_id))
             await db.commit()
             
+            # Add credit to closer
             await db.execute('''
                 INSERT INTO user_stats (user_id, all_time_closed, weekly_closed)
                 VALUES (?, 1, 1)
@@ -187,6 +173,17 @@ class Database:
                     weekly_closed = weekly_closed + 1
             ''', (closer_id,))
             await db.commit()
+            
+            # Add credit to handler if they exist
+            if handler_id:
+                await db.execute('''
+                    INSERT INTO user_stats (user_id, all_time_handled, weekly_handled)
+                    VALUES (?, 1, 1)
+                    ON CONFLICT(user_id) DO UPDATE SET
+                        all_time_handled = all_time_handled + 1,
+                        weekly_handled = weekly_handled + 1
+                ''', (handler_id,))
+                await db.commit()
     
     async def get_ticket_info(self, channel_id: int) -> Optional[Dict]:
         async with aiosqlite.connect(self.db_path) as db:

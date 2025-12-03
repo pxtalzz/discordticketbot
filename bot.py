@@ -299,6 +299,73 @@ async def claim(ctx, force: str = ""):
     await ctx.message.delete()
 
 @bot.command()
+async def forceclaim(ctx, member: discord.Member):
+    if not isinstance(ctx.channel, discord.Thread):
+        return
+    
+    # Check if user is admin - use both role names and IDs
+    is_admin = any(role.name.lower() in ['admin', 'mod', 'moderator'] for role in ctx.author.roles)
+    if not is_admin:
+        is_admin = any(role.id in [1390590641846878330, 1396033952535285790, 1428181145899630785, 1390954184530202624, 1390954010650873918] for role in ctx.author.roles)
+    
+    if not is_admin:
+        await ctx.send("Only admins can use this command!", ephemeral=True)
+        return
+    
+    ticket_info = await db.get_ticket_info(ctx.channel.id)
+    if not ticket_info:
+        return
+    
+    # If ticket is already claimed, unclaim the previous handler
+    if ticket_info['handler_id']:
+        await db.unclaim_ticket(ctx.channel.id)
+    
+    # Claim for the specified member
+    await db.claim_ticket(ctx.channel.id, member.id)
+    
+    embed = discord.Embed(
+        description=f"{member.mention} has been given credit!",
+        color=EMBED_COLOR
+    )
+    
+    msg = await ctx.send(embed=embed, reference=ctx.message)
+    await ctx.message.delete()
+
+@bot.command()
+async def forceunclaim(ctx, member: discord.Member):
+    if not isinstance(ctx.channel, discord.Thread):
+        return
+    
+    # Check if user is admin - use both role names and IDs
+    is_admin = any(role.name.lower() in ['admin', 'mod', 'moderator'] for role in ctx.author.roles)
+    if not is_admin:
+        is_admin = any(role.id in [1390590641846878330, 1396033952535285790, 1428181145899630785, 1390954184530202624, 1390954010650873918] for role in ctx.author.roles)
+    
+    if not is_admin:
+        await ctx.send("Only admins can use this command!", ephemeral=True)
+        return
+    
+    ticket_info = await db.get_ticket_info(ctx.channel.id)
+    if not ticket_info:
+        return
+    
+    # Check if the member is actually the handler
+    if ticket_info['handler_id'] != member.id:
+        await ctx.send(f"{member.mention} is not handling this ticket!", ephemeral=True)
+        return
+    
+    # Unclaim the ticket
+    await db.unclaim_ticket(ctx.channel.id)
+    
+    embed = discord.Embed(
+        description=f"{member.mention} has been unclaimed from this ticket!",
+        color=EMBED_COLOR
+    )
+    
+    msg = await ctx.send(embed=embed, reference=ctx.message)
+    await ctx.message.delete()
+
+@bot.command()
 async def unclaim(ctx, force: str = ""):
     if not isinstance(ctx.channel, discord.Thread):
         return
@@ -497,9 +564,22 @@ async def add(ctx, member: discord.Member):
     
     if not await has_staff_permission(ctx.author, ctx.guild.id):
         return
-    
-    await ctx.channel.add_user(member)
-    await ctx.send(f"Added {member.mention} to the thread!")
+    # Check if member is already in the thread
+    thread_members = [m.id for m in getattr(ctx.channel, 'members', [])]
+    if member.id in thread_members:
+        embed = discord.Embed(description=f"{member.mention} is already in this ticket", color=EMBED_COLOR)
+        await ctx.send(embed=embed)
+        return
+
+    try:
+        await ctx.channel.add_user(member)
+    except Exception as e:
+        embed = discord.Embed(description=f"Failed to add {member.mention}: {e}", color=0xff6b6b)
+        await ctx.send(embed=embed)
+        return
+
+    embed = discord.Embed(description=f"Added {member.mention} to the ticket", color=EMBED_COLOR)
+    await ctx.send(embed=embed)
 
 @bot.command()
 async def remove(ctx, member: discord.Member):
@@ -508,9 +588,82 @@ async def remove(ctx, member: discord.Member):
     
     if not await has_staff_permission(ctx.author, ctx.guild.id):
         return
+    # Check if member is actually in the thread
+    thread_members = [m.id for m in getattr(ctx.channel, 'members', [])]
+    if member.id not in thread_members:
+        embed = discord.Embed(description=f"{member.mention} is not in this ticket", color=EMBED_COLOR)
+        await ctx.send(embed=embed)
+        return
+
+    try:
+        await ctx.channel.remove_user(member)
+    except Exception as e:
+        embed = discord.Embed(description=f"Failed to remove {member.mention}: {e}", color=0xff6b6b)
+        await ctx.send(embed=embed)
+        return
+
+    embed = discord.Embed(description=f"Removed {member.mention} from the ticket", color=EMBED_COLOR)
+    await ctx.send(embed=embed)
+
+@bot.command()
+async def addall(ctx, user_id: int):
+    if not await has_staff_permission(ctx.author, ctx.guild.id):
+        return
     
-    await ctx.channel.remove_user(member)
-    await ctx.send(f"Removed {member.mention} from the thread!")
+    try:
+        member = await bot.fetch_user(user_id)
+    except discord.NotFound:
+        return
+    
+    # Need to use a proper query to get results
+    async with __import__('aiosqlite').connect(db.db_path) as db_conn:
+        async with db_conn.execute("SELECT channel_id FROM tickets WHERE status = 'open'") as cursor:
+            tickets = await cursor.fetchall()
+    
+    for ticket_row in tickets:
+        channel_id = ticket_row[0]
+        channel = bot.get_channel(channel_id)
+        if channel:
+            try:
+                await channel.add_user(member)
+
+                embed = discord.Embed(
+                    description=f"Added {member.mention} from the ticket",
+                    color=EMBED_COLOR
+                )
+                await ctx.send(embed=embed)
+            except:
+                pass
+
+@bot.command()
+async def removeall(ctx, user_id: int):
+    if not await has_staff_permission(ctx.author, ctx.guild.id):
+        return
+    
+    try:
+        member = await bot.fetch_user(user_id)
+    except discord.NotFound:
+        return
+    
+    # Get all open tickets
+    async with __import__('aiosqlite').connect(db.db_path) as db_conn:
+        async with db_conn.execute("SELECT channel_id FROM tickets WHERE status = 'open'") as cursor:
+            tickets = await cursor.fetchall()
+    
+    for ticket_row in tickets:
+        channel_id = ticket_row[0]
+        channel = bot.get_channel(channel_id)
+        if channel:
+            try:
+                await channel.remove_user(member)
+
+                embed = discord.Embed(
+                    description=f"Removed {member.mention} from the ticket",
+                    color=EMBED_COLOR
+                )
+                await ctx.send(embed=embed)
+            except:
+                pass
 
 @bot.command()
 async def rename(ctx, *, name: str):
@@ -789,9 +942,18 @@ async def sunday_leaderboard():
             if lb_channel_id:
                 channel = bot.get_channel(lb_channel_id)
                 if channel:
+                    # Calculate the weekly timeframe: start = this Sunday 5:00 AM EST, end = next Sunday 5:00 AM EST
+                    start_dt = now.replace(minute=0, second=0, microsecond=0)
+                    start_ts = int(start_dt.timestamp())
+                    end_ts = start_ts + 7 * 24 * 60 * 60
+
+                    # Send a separate message showing the timeframe using Discord timestamps
+                    timeframe_msg = f"From <t:{start_ts}:F> to <t:{end_ts}:F>"
+                    await channel.send(timeframe_msg)
+
                     handled_data = await build_leaderboard_embed("handled")
                     closed_data = await build_leaderboard_embed("closed")
-                    
+
                     await channel.send(embed=handled_data)
                     await channel.send(embed=closed_data)
 

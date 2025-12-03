@@ -183,18 +183,62 @@ async def create_stats_image(
         nitro_size = 35
         badge_x_pos = badge_x - nitro_size - 10
         badge_y_pos = badge_y
-        
-        draw.ellipse(
-            [(badge_x_pos, badge_y_pos), (badge_x_pos + nitro_size, badge_y_pos + nitro_size)],
-            fill=(127, 75, 200)
-        )
-        
-        bbox = draw.textbbox((0, 0), "N", font=font_small)
-        text_w = bbox[2] - bbox[0]
-        text_h = bbox[3] - bbox[1]
-        text_x = badge_x_pos + (nitro_size - text_w) // 2
-        text_y = badge_y_pos + (nitro_size - text_h) // 2
-        draw.text((text_x, text_y), "N", fill=(255, 255, 255), font=font_small)
+
+        # Try to fetch a Nitro logo from the supplied fandom page (uses og:image meta fallback)
+        nitro_img = None
+        nitro_page = 'https://logos.fandom.com/wiki/Discord_Nitro'
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(nitro_page) as resp:
+                    if resp.status == 200:
+                        text = await resp.text()
+                        import re
+                        m = re.search(r'property="og:image"\s+content="([^"]+)"', text)
+                        if not m:
+                            m = re.search(r'og:image"\s*content="([^"]+)"', text)
+                        if m:
+                            img_url = m.group(1)
+                            if img_url.startswith('//'):
+                                img_url = 'https:' + img_url
+                            try:
+                                async with session.get(img_url) as iresp:
+                                    if iresp.status == 200:
+                                        nitro_data = await iresp.read()
+                                        nitro_img = Image.open(io.BytesIO(nitro_data)).convert('RGBA')
+                            except Exception:
+                                nitro_img = None
+        except Exception as e:
+            print(f"[DEBUG] Error fetching Nitro logo page: {e}")
+
+        if nitro_img:
+            try:
+                nitro_img = nitro_img.resize((nitro_size, nitro_size), Image.Resampling.LANCZOS)
+                img.paste(nitro_img, (badge_x_pos, badge_y_pos), nitro_img)
+            except Exception as e:
+                print(f"[DEBUG] Error processing Nitro image: {e}")
+                # fallback to simple badge
+                draw.ellipse(
+                    [(badge_x_pos, badge_y_pos), (badge_x_pos + nitro_size, badge_y_pos + nitro_size)],
+                    fill=(127, 75, 200)
+                )
+                bbox = draw.textbbox((0, 0), "N", font=font_small)
+                text_w = bbox[2] - bbox[0]
+                text_h = bbox[3] - bbox[1]
+                text_x = badge_x_pos + (nitro_size - text_w) // 2
+                text_y = badge_y_pos + (nitro_size - text_h) // 2
+                draw.text((text_x, text_y), "N", fill=(255, 255, 255), font=font_small)
+        else:
+            # fallback: draw a small purple circle with 'N'
+            draw.ellipse(
+                [(badge_x_pos, badge_y_pos), (badge_x_pos + nitro_size, badge_y_pos + nitro_size)],
+                fill=(127, 75, 200)
+            )
+            bbox = draw.textbbox((0, 0), "N", font=font_small)
+            text_w = bbox[2] - bbox[0]
+            text_h = bbox[3] - bbox[1]
+            text_x = badge_x_pos + (nitro_size - text_w) // 2
+            text_y = badge_y_pos + (nitro_size - text_h) // 2
+            draw.text((text_x, text_y), "N", fill=(255, 255, 255), font=font_small)
     
     img_rgba = img.convert('RGBA')
     border_img = Image.new('RGBA', (width + 20, height + 20), (0, 0, 0, 80))
