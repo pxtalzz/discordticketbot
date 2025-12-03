@@ -1,0 +1,48 @@
+name: Deploy to Render
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    name: Set env + Trigger Render Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install utilities
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y jq curl
+
+      - name: Set Discord token on Render and trigger deploy
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+        run: |
+          set -euo pipefail
+          AUTH="Authorization: Bearer $RENDER_API_KEY"
+          SRV="$RENDER_SERVICE_ID"
+
+          echo "Checking existing env vars for service $SRV"
+          existing=$(curl -s -H "$AUTH" "https://api.render.com/v1/services/$SRV/env-vars")
+
+          id=$(echo "$existing" | jq -r '.[] | select(.key=="DISCORD_TOKEN") | .id' || true)
+
+          if [ -n "$id" ] && [ "$id" != "null" ]; then
+            echo "Updating existing DISCORD_TOKEN env var (id=$id)"
+            curl -s -X PATCH -H "$AUTH" -H "Content-Type: application/json" \
+              -d '{"value":"'"$DISCORD_TOKEN"'","secure":true}' \
+              "https://api.render.com/v1/services/$SRV/env-vars/$id"
+          else
+            echo "Creating DISCORD_TOKEN env var"
+            curl -s -X POST -H "$AUTH" -H "Content-Type: application/json" \
+              -d '{"key":"DISCORD_TOKEN","value":"'"$DISCORD_TOKEN"'","secure":true}' \
+              "https://api.render.com/v1/services/$SRV/env-vars"
+          fi
+
+          echo "Triggering a deploy for service $SRV"
+          curl -s -X POST -H "$AUTH" "https://api.render.com/v1/services/$SRV/deploys" -d '{}'
+          echo "Deploy triggered"
